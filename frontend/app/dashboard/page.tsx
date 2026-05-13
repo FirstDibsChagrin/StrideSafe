@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ACWRChart from './ACWRChart'
 import CheckinForm from './CheckinForm'
+import InjuryModal from './InjuryModal'
 import SyncButton from './SyncButton'
 import WeeklyMileageChart from './WeeklyMileageChart'
 
@@ -27,6 +28,17 @@ interface RiskScore {
   onset_days: number
   recommendations: string[] | null
   date: string
+}
+
+interface Injury {
+  id: string
+  injury_type: string | null
+  body_location: string | null
+  start_date: string | null
+  severity: number | null
+  estimated_days_out: number | null
+  confirmed_by_coach: boolean
+  reported_at: string | null
 }
 
 function formatPace(secPerKm: number | null): string {
@@ -93,49 +105,60 @@ export default async function DashboardPage() {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000'
   const stravaConnectUrl = `${backendUrl}/strava/connect?user_id=${user.id}`
 
-  const [riskResult, metricsResult, activitiesResult, checkinResult, stravaResult] =
-    await Promise.all([
-      supabase
-        .from('risk_scores')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from('training_metrics')
-        .select('date,acwr,weekly_mileage_km')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .limit(60),
-      supabase
-        .from('activities')
-        .select(
-          'strava_activity_id,activity_date,distance_meters,duration_seconds,avg_pace_sec_per_km,workout_type',
-        )
-        .eq('user_id', user.id)
-        .order('activity_date', { ascending: false })
-        .limit(10),
-      supabase
-        .from('daily_checkins')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('checkin_date', today)
-        .maybeSingle(),
-      supabase
-        .from('strava_connections')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle(),
-    ])
+  const [
+    riskResult,
+    metricsResult,
+    activitiesResult,
+    checkinResult,
+    stravaResult,
+    injuriesResult,
+  ] = await Promise.all([
+    supabase
+      .from('risk_scores')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('training_metrics')
+      .select('date,acwr,weekly_mileage_km')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(60),
+    supabase
+      .from('activities')
+      .select(
+        'strava_activity_id,activity_date,distance_meters,duration_seconds,avg_pace_sec_per_km,workout_type',
+      )
+      .eq('user_id', user.id)
+      .order('activity_date', { ascending: false })
+      .limit(10),
+    supabase
+      .from('daily_checkins')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('checkin_date', today)
+      .maybeSingle(),
+    supabase
+      .from('strava_connections')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('injuries')
+      .select('id,injury_type,body_location,start_date,severity,estimated_days_out,confirmed_by_coach,reported_at')
+      .eq('user_id', user.id)
+      .order('reported_at', { ascending: false }),
+  ])
 
   const riskScore: RiskScore | null = riskResult.data
   const metrics: MetricRow[] = metricsResult.data ?? []
   const activities: Activity[] = activitiesResult.data ?? []
+  const injuries: Injury[] = injuriesResult.data ?? []
   const hasCheckedInToday = !!checkinResult.data
   const hasStravaConnection = !!stravaResult.data
 
-  // Last 30 days for ACWR chart
   const acwrData = [...metrics]
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(-30)
@@ -147,16 +170,19 @@ export default async function DashboardPage() {
     <main className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Runner Dashboard</h1>
             <p className="text-sm text-gray-500">Training load &amp; injury risk overview</p>
           </div>
-          <SyncButton
-            userId={user.id}
-            hasStravaConnection={hasStravaConnection}
-            stravaConnectUrl={stravaConnectUrl}
-          />
+          <div className="flex items-center gap-3">
+            <InjuryModal userId={user.id} />
+            <SyncButton
+              userId={user.id}
+              hasStravaConnection={hasStravaConnection}
+              stravaConnectUrl={stravaConnectUrl}
+            />
+          </div>
         </div>
 
         {/* Risk Score + Recommendations */}
@@ -198,7 +224,9 @@ export default async function DashboardPage() {
               </ul>
             ) : (
               <p className="mt-3 text-sm text-gray-400">
-                {riskScore ? 'No recommendations — keep up the great work!' : 'Sync your runs to generate recommendations.'}
+                {riskScore
+                  ? 'No recommendations — keep up the great work!'
+                  : 'Sync your runs to generate recommendations.'}
               </p>
             )}
           </div>
@@ -261,6 +289,50 @@ export default async function DashboardPage() {
             </div>
           )}
         </div>
+
+        {/* Active Injuries */}
+        {injuries.length > 0 && (
+          <div className="rounded-xl border border-orange-200 bg-white p-6">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-orange-500">
+              Active Injuries
+            </p>
+            <div className="space-y-3">
+              {injuries.map((injury) => (
+                <div
+                  key={injury.id}
+                  className="flex items-start justify-between rounded-lg border border-orange-100 bg-orange-50 px-4 py-3"
+                >
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {injury.injury_type ?? 'Injury'}
+                      {injury.body_location && (
+                        <span className="font-normal text-gray-500"> — {injury.body_location}</span>
+                      )}
+                    </p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
+                      {injury.start_date && <span>Since {injury.start_date}</span>}
+                      {injury.severity != null && (
+                        <span>Severity {injury.severity}/10</span>
+                      )}
+                      {injury.estimated_days_out != null && (
+                        <span>~{injury.estimated_days_out} days out</span>
+                      )}
+                    </div>
+                  </div>
+                  <span
+                    className={`mt-0.5 flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                      injury.confirmed_by_coach
+                        ? 'bg-orange-200 text-orange-800'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {injury.confirmed_by_coach ? 'Confirmed' : 'Pending'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Daily Check-in */}
         <div className="rounded-xl border border-gray-200 bg-white p-6">
