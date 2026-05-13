@@ -2,7 +2,8 @@ import os
 from datetime import datetime, timezone
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from services.db import get_supabase
@@ -12,18 +13,26 @@ from services.risk import compute_risk_score
 router = APIRouter(prefix="/strava", tags=["strava"])
 
 
+# ── Manual sync ────────────────────────────────────────────────────────────────
+
 class SyncRequest(BaseModel):
     user_id: str
 
 
-@router.post("/sync")
-async def sync_strava(body: SyncRequest):
+async def _do_sync(user_id: str) -> int:
+    """
+    Core sync logic: refresh token if needed, fetch last 90 activities from
+    Strava, upsert into activities table, then recompute metrics and risk.
+    Returns the number of activities synced.
+    Extracted so it can be called both from the manual endpoint and the
+    background task triggered by the webhook.
+    """
     supabase = get_supabase()
 
     result = (
         supabase.table("strava_connections")
         .select("*")
-        .eq("user_id", body.user_id)
+        .eq("user_id", user_id)
         .limit(1)
         .execute()
     )
@@ -57,7 +66,7 @@ async def sync_strava(body: SyncRequest):
                 "refresh_token": token_data["refresh_token"],
                 "expires_at": token_data["expires_at"],
             }
-        ).eq("user_id", body.user_id).execute()
+        ).eq("user_id", user_id).execute()
 
     async with httpx.AsyncClient() as client:
         activities_resp = await client.get(
@@ -80,7 +89,7 @@ async def sync_strava(body: SyncRequest):
         avg_pace = duration_s / distance_km if distance_km > 0 else 0.0
 
         row = {
-            "user_id": body.user_id,
+            "user_id": user_id,
             "strava_activity_id": str(activity["id"]),
             "activity_date": activity.get("start_date"),
             "distance_meters": distance_m,
@@ -97,11 +106,18 @@ async def sync_strava(body: SyncRequest):
         supabase.table("activities").upsert(row, on_conflict="strava_activity_id").execute()
         synced += 1
 
-    compute_metrics(body.user_id)
-    compute_risk_score(body.user_id)
+    compute_metrics(user_id)
+    compute_risk_score(user_id)
+    return synced
 
+
+@router.post("/sync")
+async def sync_strava(body: SyncRequest):
+    synced = await _do_sync(body.user_id)
     return {"synced": synced}
 
+
+# ── Activities list ────────────────────────────────────────────────────────────
 
 @router.get("/activities/{user_id}")
 def get_activities(user_id: str):
@@ -114,3 +130,78 @@ def get_activities(user_id: str):
         .execute()
     )
     return result.data or []
+
+
+# ── Webhook verification (GET) ─────────────────────────────────────────────────
+
+@router.get("/webhook")
+def verify_webhook(
+    hub_mode: str = Query(alias="hub.mode", default=""),
+    hub_verify_token: str = Query(alias="hub.verify_token", default=""),
+    hub_challenge: str = Query(alias="hub.challenge", default=""),
+):
+    """
+    Strava sends this GET request when you register a webhook subscription.
+    Respond with the challenge to prove ownership of the endpoint.
+    Set STRAVA_WEBHOOK_VERIFY_TOKEN in your environment to any secret string,
+    then supply the same value when registering the webhook with Strava.
+    """
+    expected = os.environ.get("STRAVA_WEBHOOK_VERIFY_TOKEN", "")
+    if hub_mode == "subscribe" and hub_verify_token == expected:
+        return {"hub.challenge": hub_challenge}
+    return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+
+
+# ── Webhook event receiver (POST) ──────────────────────────────────────────────
+
+def _sync_from_webhook(strava_athlete_id: int) -> None:
+    """
+    Background task: look up the app user by their Strava athlete ID and run
+    the full sync + metrics + risk pipeline for them.
+    Runs in a thread managed by FastAPI's BackgroundTasks so Strava receives
+    a 200 immediately and is never blocked by our processing time.
+    """
+    import asyncio
+
+    supabase = get_supabase()
+    result = (
+        supabase.table("strava_connections")
+        .select("user_id")
+        .eq("strava_athlete_id", strava_athlete_id)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        print(f"[webhook] No connection found for Strava athlete {strava_athlete_id}")
+        return
+
+    user_id = result.data[0]["user_id"]
+    print(f"[webhook] Triggering sync for user {user_id} (athlete {strava_athlete_id})")
+    try:
+        asyncio.run(_do_sync(user_id))
+        print(f"[webhook] Sync complete for user {user_id}")
+    except Exception as exc:
+        print(f"[webhook] Sync failed for user {user_id}: {exc}")
+
+
+@router.post("/webhook")
+async def receive_webhook(request: Request, background_tasks: BackgroundTasks):
+    """
+    Strava pushes a POST here whenever an athlete performs an action (new
+    activity, update, delete, …).  We only act on activity-create events.
+    Always returns 200 immediately — Strava requires a response within 2 s.
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        # Malformed body — still return 200 so Strava doesn't retry
+        return {"status": "ok"}
+
+    object_type = payload.get("object_type")
+    aspect_type = payload.get("aspect_type")
+    owner_id    = payload.get("owner_id")  # Strava athlete ID
+
+    if object_type == "activity" and aspect_type == "create" and owner_id:
+        background_tasks.add_task(_sync_from_webhook, int(owner_id))
+
+    return {"status": "ok"}
