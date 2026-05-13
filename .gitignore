@@ -25,6 +25,10 @@ dist/
 build/
 .pytest_cache/
 
+# ML artefacts — model binary too large for git; run ml/train.py to regenerate
+ml/model.pkl
+ml/data/
+
 # Misc
 .DS_Store
 *.pem
