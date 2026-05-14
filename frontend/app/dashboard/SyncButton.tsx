@@ -8,6 +8,13 @@ interface SyncButtonProps {
   stravaConnectUrl: string
 }
 
+const BACKEND_UNAVAILABLE_MSG =
+  'Strava sync is coming soon — the backend is not yet deployed. Your data will sync once the server is live.'
+
+function isLocalBackend(url: string) {
+  return url.includes('localhost') || url.includes('127.0.0.1')
+}
+
 export default function SyncButton({
   userId,
   hasStravaConnection,
@@ -16,7 +23,15 @@ export default function SyncButton({
   const [syncing, setSyncing] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000'
+  const backendIsLocal = isLocalBackend(backendUrl)
+
   if (!hasStravaConnection) {
+    if (backendIsLocal) {
+      return (
+        <p className="max-w-xs text-sm text-gray-400 italic">{BACKEND_UNAVAILABLE_MSG}</p>
+      )
+    }
     return (
       <a
         href={stravaConnectUrl}
@@ -31,7 +46,6 @@ export default function SyncButton({
     setSyncing(true)
     setMessage(null)
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000'
       const res = await fetch(`${backendUrl}/strava/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,7 +58,7 @@ export default function SyncButton({
         setMessage(data.detail ?? 'Sync failed')
       }
     } catch {
-      setMessage('Sync failed — check your connection')
+      setMessage(backendIsLocal ? BACKEND_UNAVAILABLE_MSG : 'Sync failed — check your connection')
     } finally {
       setSyncing(false)
     }
@@ -59,7 +73,11 @@ export default function SyncButton({
       >
         {syncing ? 'Syncing…' : 'Sync Runs'}
       </button>
-      {message && <span className="text-sm text-gray-500">{message}</span>}
+      {message && (
+        <span className={`max-w-xs text-sm ${message === BACKEND_UNAVAILABLE_MSG ? 'italic text-gray-400' : 'text-gray-500'}`}>
+          {message}
+        </span>
+      )}
     </div>
   )
 }

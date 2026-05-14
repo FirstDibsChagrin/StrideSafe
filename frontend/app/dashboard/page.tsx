@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
+import AccountMenu from '@/components/AccountMenu'
 import ACWRChart from './ACWRChart'
 import CheckinForm from './CheckinForm'
 import InjuryModal from './InjuryModal'
@@ -182,6 +183,7 @@ export default async function DashboardPage() {
               hasStravaConnection={hasStravaConnection}
               stravaConnectUrl={stravaConnectUrl}
             />
+            <AccountMenu email={user.email ?? ''} />
           </div>
         </div>
 

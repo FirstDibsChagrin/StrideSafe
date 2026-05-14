@@ -12,15 +12,16 @@ interface Team {
 interface OnboardingFlowProps {
   userId: string
   teams: Team[]
+  lockedRole: 'runner' | 'coach' | null
 }
 
 type Role = 'runner' | 'coach'
 
-export default function OnboardingFlow({ userId, teams }: OnboardingFlowProps) {
+export default function OnboardingFlow({ userId, teams, lockedRole }: OnboardingFlowProps) {
   const router = useRouter()
 
-  const [step, setStep] = useState(1)
-  const [role, setRole] = useState<Role | null>(null)
+  const [step, setStep] = useState(lockedRole ? 2 : 1)
+  const [role, setRole] = useState<Role | null>(lockedRole)
   const [fullName, setFullName] = useState('')
   const [age, setAge] = useState<number | ''>('')
   const [gender, setGender] = useState('')
@@ -68,7 +69,7 @@ export default function OnboardingFlow({ userId, teams }: OnboardingFlowProps) {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.error ?? 'Something went wrong')
       }
-      router.push('/dashboard')
+      router.push(role === 'coach' ? '/coach' : '/dashboard')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -76,30 +77,33 @@ export default function OnboardingFlow({ userId, teams }: OnboardingFlowProps) {
     }
   }
 
+  const totalSteps = lockedRole ? 2 : 3
+  const displayStep = lockedRole ? step - 1 : step
+
   return (
     <div className="mx-auto max-w-lg">
       {/* Step indicator */}
       <div className="mb-8 flex items-center gap-2">
-        {[1, 2, 3].map((s) => (
+        {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div
               className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-                s === step
+                s === displayStep
                   ? 'bg-blue-600 text-white'
-                  : s < step
+                  : s < displayStep
                     ? 'bg-blue-100 text-blue-600'
                     : 'bg-gray-100 text-gray-400'
               }`}
             >
               {s}
             </div>
-            {s < 3 && <div className={`h-px w-8 ${s < step ? 'bg-blue-300' : 'bg-gray-200'}`} />}
+            {s < totalSteps && <div className={`h-px w-8 ${s < displayStep ? 'bg-blue-300' : 'bg-gray-200'}`} />}
           </div>
         ))}
       </div>
 
-      {/* ── Step 1: Role ── */}
-      {step === 1 && (
+      {/* ── Step 1: Role (only shown when role is not locked) ── */}
+      {step === 1 && !lockedRole && (
         <div className="space-y-6">
           <div>
             <h2 className="text-xl font-bold text-gray-900">Are you a runner or a coach?</h2>
@@ -199,12 +203,14 @@ export default function OnboardingFlow({ userId, teams }: OnboardingFlowProps) {
           )}
 
           <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => setStep(1)}
-              className="flex-1 rounded-md border border-gray-300 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Back
-            </button>
+            {!lockedRole && (
+              <button
+                onClick={() => setStep(1)}
+                className="flex-1 rounded-md border border-gray-300 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Back
+              </button>
+            )}
             <button
               disabled={!canAdvanceStep2}
               onClick={() => setStep(3)}

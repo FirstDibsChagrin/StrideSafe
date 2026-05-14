@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
+import AccountMenu from '@/components/AccountMenu'
 import RunnerList from './RunnerList'
 
 interface Profile {
@@ -143,11 +144,14 @@ export default async function CoachPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-4xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Coach Dashboard</h1>
-          <p className="text-sm text-gray-500">
-            Team overview — {runnersData.length} runner{runnersData.length !== 1 ? 's' : ''}
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Coach Dashboard</h1>
+            <p className="text-sm text-gray-500">
+              Team overview — {runnersData.length} runner{runnersData.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <AccountMenu email={user.email ?? ''} />
         </div>
 
         {/* Legend */}
