@@ -8,9 +8,6 @@ interface SyncButtonProps {
   stravaConnectUrl: string
 }
 
-const BACKEND_UNAVAILABLE_MSG =
-  'Strava sync is coming soon — the backend is not yet deployed. Your data will sync once the server is live.'
-
 export default function SyncButton({
   userId,
   hasStravaConnection,
@@ -19,17 +16,9 @@ export default function SyncButton({
   const [syncing, setSyncing] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  console.log('API URL:', process.env.NEXT_PUBLIC_API_URL)
-
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? ''
-  const backendReady = backendUrl.startsWith('https://')
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://stridesafe-production.up.railway.app'
 
   if (!hasStravaConnection) {
-    if (!backendReady) {
-      return (
-        <p className="max-w-xs text-sm text-gray-400 italic">{BACKEND_UNAVAILABLE_MSG}</p>
-      )
-    }
     return (
       <a
         href={stravaConnectUrl}
@@ -44,7 +33,7 @@ export default function SyncButton({
     setSyncing(true)
     setMessage(null)
     try {
-      const res = await fetch(`${backendUrl}/strava/sync`, {
+      const res = await fetch(`${apiUrl}/strava/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId }),
@@ -56,7 +45,7 @@ export default function SyncButton({
         setMessage(data.detail ?? 'Sync failed')
       }
     } catch {
-      setMessage(!backendReady ? BACKEND_UNAVAILABLE_MSG : 'Sync failed — check your connection')
+      setMessage('Sync failed — check your connection')
     } finally {
       setSyncing(false)
     }
@@ -71,11 +60,7 @@ export default function SyncButton({
       >
         {syncing ? 'Syncing…' : 'Sync Runs'}
       </button>
-      {message && (
-        <span className={`max-w-xs text-sm ${message === BACKEND_UNAVAILABLE_MSG ? 'italic text-gray-400' : 'text-gray-500'}`}>
-          {message}
-        </span>
-      )}
+      {message && <span className="text-sm text-gray-500">{message}</span>}
     </div>
   )
 }

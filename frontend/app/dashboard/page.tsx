@@ -103,8 +103,8 @@ export default async function DashboardPage() {
   }
 
   const today = new Date().toISOString().split('T')[0]
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-  const stravaConnectUrl = `${backendUrl}/strava/connect?user_id=${user.id}`
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://stridesafe-production.up.railway.app'
+  const stravaConnectUrl = `${apiUrl}/strava/connect?user_id=${user.id}`
 
   const [
     riskResult,
