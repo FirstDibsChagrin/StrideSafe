@@ -14,6 +14,7 @@ CREATE TABLE public.teams (
 -- id mirrors auth.users.id (no separate user_id column).
 CREATE TABLE public.profiles (
   id         UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email      TEXT NOT NULL,
   role       TEXT NOT NULL CHECK (role IN ('runner', 'coach')),
   full_name  TEXT,
   age        INTEGER,
