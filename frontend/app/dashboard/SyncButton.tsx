@@ -11,10 +11,6 @@ interface SyncButtonProps {
 const BACKEND_UNAVAILABLE_MSG =
   'Strava sync is coming soon — the backend is not yet deployed. Your data will sync once the server is live.'
 
-function isLocalBackend(url: string) {
-  return url.includes('localhost') || url.includes('127.0.0.1')
-}
-
 export default function SyncButton({
   userId,
   hasStravaConnection,
@@ -23,11 +19,13 @@ export default function SyncButton({
   const [syncing, setSyncing] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-  const backendIsLocal = isLocalBackend(backendUrl)
+  console.log('API URL:', process.env.NEXT_PUBLIC_API_URL)
+
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? ''
+  const backendReady = backendUrl.startsWith('https://')
 
   if (!hasStravaConnection) {
-    if (backendIsLocal) {
+    if (!backendReady) {
       return (
         <p className="max-w-xs text-sm text-gray-400 italic">{BACKEND_UNAVAILABLE_MSG}</p>
       )
@@ -58,7 +56,7 @@ export default function SyncButton({
         setMessage(data.detail ?? 'Sync failed')
       }
     } catch {
-      setMessage(backendIsLocal ? BACKEND_UNAVAILABLE_MSG : 'Sync failed — check your connection')
+      setMessage(!backendReady ? BACKEND_UNAVAILABLE_MSG : 'Sync failed — check your connection')
     } finally {
       setSyncing(false)
     }
