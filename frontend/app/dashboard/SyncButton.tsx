@@ -23,7 +23,7 @@ export default function SyncButton({
   const [syncing, setSyncing] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000'
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
   const backendIsLocal = isLocalBackend(backendUrl)
 
   if (!hasStravaConnection) {
