@@ -22,12 +22,13 @@ interface RunnerCheckin {
 
 interface RunnerInjury {
   id: string
-  description: string | null
+  injury_type: string | null
+  body_location: string | null
   reported_at: string | null
 }
 
 interface RunnerData {
-  user_id: string
+  id: string
   full_name: string | null
   latestRisk: {
     global_score: number
@@ -86,7 +87,7 @@ function RunnerRow({
       await fetch('/api/coach/note', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ runner_id: runner.user_id, coach_id: coachId, note }),
+        body: JSON.stringify({ runner_id: runner.id, coach_id: coachId, note }),
       })
       setNote('')
       setNoteSaved(true)
@@ -262,7 +263,10 @@ function RunnerRow({
                     className="flex items-center justify-between rounded-md border border-orange-200 bg-orange-50 px-3 py-2"
                   >
                     <div className="text-sm text-orange-800">
-                      <p>{inj.description ?? 'Injury reported'}</p>
+                      <p>
+                        {inj.injury_type ?? 'Injury reported'}
+                        {inj.body_location ? ` — ${inj.body_location}` : ''}
+                      </p>
                       {inj.reported_at && (
                         <p className="text-xs opacity-60">{inj.reported_at.slice(0, 10)}</p>
                       )}
@@ -321,7 +325,7 @@ export default function RunnerList({ runners, coachId }: RunnerListProps) {
   return (
     <div className="divide-y divide-gray-100">
       {runners.map((runner) => (
-        <RunnerRow key={runner.user_id} runner={runner} coachId={coachId} />
+        <RunnerRow key={runner.id} runner={runner} coachId={coachId} />
       ))}
     </div>
   )

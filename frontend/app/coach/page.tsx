@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import RunnerList from './RunnerList'
 
 interface Profile {
-  user_id: string
+  id: string
   full_name: string | null
   role: string | null
   team_id: string | null
@@ -25,7 +25,7 @@ export default async function CoachPage() {
   const { data: coachProfile } = await supabase
     .from('profiles')
     .select('role,team_id,full_name')
-    .eq('user_id', user.id)
+    .eq('id', user.id)
     .maybeSingle()
 
   if (!coachProfile || coachProfile.role !== 'coach') {
@@ -50,12 +50,12 @@ export default async function CoachPage() {
   // Fetch all runners on this team
   const { data: runnerProfiles } = await supabase
     .from('profiles')
-    .select('user_id,full_name,role,team_id')
+    .select('id,full_name,role,team_id')
     .eq('team_id', teamId)
     .eq('role', 'runner')
 
   const runners: Profile[] = runnerProfiles ?? []
-  const runnerIds = runners.map((r) => r.user_id)
+  const runnerIds = runners.map((r) => r.id)
 
   if (runnerIds.length === 0) {
     return (
@@ -97,7 +97,7 @@ export default async function CoachPage() {
         .order('checkin_date', { ascending: false }),
       supabase
         .from('injuries')
-        .select('id,user_id,description,reported_at')
+        .select('id,user_id,injury_type,body_location,reported_at')
         .in('user_id', runnerIds)
         .eq('confirmed_by_coach', false),
     ])
@@ -112,20 +112,20 @@ export default async function CoachPage() {
   const runnersData = runners
     .map((runner) => {
       const latestRisk =
-        allRiskScores.find((r) => r.user_id === runner.user_id) ?? null
+        allRiskScores.find((r) => r.user_id === runner.id) ?? null
       const latestMetrics =
-        allMetrics.find((m) => m.user_id === runner.user_id) ?? null
+        allMetrics.find((m) => m.user_id === runner.id) ?? null
       const lastRuns = allActivities
-        .filter((a) => a.user_id === runner.user_id)
+        .filter((a) => a.user_id === runner.id)
         .slice(0, 5)
       const latestCheckin =
-        allCheckins.find((c) => c.user_id === runner.user_id) ?? null
+        allCheckins.find((c) => c.user_id === runner.id) ?? null
       const unconfirmedInjuries = allInjuries.filter(
-        (i) => i.user_id === runner.user_id,
+        (i) => i.user_id === runner.id,
       )
 
       return {
-        user_id: runner.user_id,
+        id: runner.id,
         full_name: runner.full_name,
         latestRisk,
         latestMetrics,

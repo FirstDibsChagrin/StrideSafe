@@ -58,14 +58,14 @@ export async function POST(req: NextRequest) {
 
   const { error: profileError } = await supabase.from('profiles').upsert(
     {
-      user_id: user.id,
+      id: user.id,
       role,
       full_name,
       age: age ?? null,
       gender: gender ?? null,
       team_id: resolvedTeamId,
     },
-    { onConflict: 'user_id' },
+    { onConflict: 'id' },
   )
 
   if (profileError) {

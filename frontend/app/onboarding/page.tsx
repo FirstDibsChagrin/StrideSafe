@@ -18,7 +18,7 @@ export default async function OnboardingPage() {
   const { data: profile } = await supabase
     .from('profiles')
     .select('team_id')
-    .eq('user_id', user.id)
+    .eq('id', user.id)
     .maybeSingle()
 
   if (profile?.team_id) {
