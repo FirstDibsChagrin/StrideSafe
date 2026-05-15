@@ -21,6 +21,11 @@ STRAVA_WEBHOOK_VERIFY_TOKEN = os.environ.get("STRAVA_WEBHOOK_VERIFY_TOKEN", "")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 
+def _unix_to_iso(unix_ts: int) -> str:
+    """Convert a Unix timestamp integer to an ISO 8601 UTC string for Supabase."""
+    return datetime.fromtimestamp(unix_ts, tz=timezone.utc).isoformat()
+
+
 # ── Auth: runner login via Strava ─────────────────────────────────────────────
 
 @auth_router.get("/strava")
@@ -86,8 +91,8 @@ async def strava_callback(
     athlete = token_data.get("athlete", {})
     access_token = token_data["access_token"]
     refresh_token = token_data["refresh_token"]
-    token_expires_at = int(datetime.now(timezone.utc).timestamp()) + int(
-        token_data.get("expires_in", 21600)
+    token_expires_at = _unix_to_iso(
+        int(datetime.now(timezone.utc).timestamp()) + int(token_data.get("expires_in", 21600))
     )
     strava_athlete_id = athlete.get("id")
 
@@ -116,7 +121,7 @@ async def _handle_login_flow(
     athlete: dict,
     access_token: str,
     refresh_token: str,
-    token_expires_at: int,
+    token_expires_at: str,
     strava_athlete_id: int,
 ) -> RedirectResponse:
     """Find-or-create a Supabase user for this Strava athlete, then sign them in."""
@@ -195,7 +200,7 @@ def _handle_connect_flow(
     athlete: dict,
     access_token: str,
     refresh_token: str,
-    token_expires_at: int,
+    token_expires_at: str,
     strava_athlete_id: int,
 ) -> RedirectResponse:
     """Connect Strava to an already-authenticated StrideSafe account."""
@@ -281,7 +286,14 @@ async def _do_sync(user_id: str) -> int:
     expires_at = conn.get("token_expires_at") or conn.get("expires_at")
 
     now_ts = datetime.now(timezone.utc).timestamp()
-    if expires_at and now_ts >= float(expires_at):
+    token_expired = False
+    if expires_at:
+        try:
+            token_expired = now_ts >= datetime.fromisoformat(str(expires_at)).timestamp()
+        except (ValueError, TypeError):
+            token_expired = now_ts >= float(expires_at)  # fallback for legacy int values
+
+    if token_expired:
         async with httpx.AsyncClient() as client:
             refresh_resp = await client.post(
                 "https://www.strava.com/oauth/token",
@@ -297,8 +309,8 @@ async def _do_sync(user_id: str) -> int:
             raise HTTPException(status_code=400, detail="Failed to refresh Strava token")
         token_data = refresh_resp.json()
         access_token = token_data["access_token"]
-        new_expires_at = int(datetime.now(timezone.utc).timestamp()) + int(
-            token_data.get("expires_in", 21600)
+        new_expires_at = _unix_to_iso(
+            int(datetime.now(timezone.utc).timestamp()) + int(token_data.get("expires_in", 21600))
         )
         supabase.table("strava_connections").update(
             {
