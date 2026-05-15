@@ -12,18 +12,6 @@ export default function LandingPage() {
         >
           Sign In
         </a>
-        <a
-          href="/dashboard"
-          className="rounded-md border border-gray-300 px-6 py-3 hover:bg-gray-50"
-        >
-          Runner Dashboard
-        </a>
-        <a
-          href="/coach"
-          className="rounded-md border border-gray-300 px-6 py-3 hover:bg-gray-50"
-        >
-          Coach Dashboard
-        </a>
       </div>
     </main>
   );
