@@ -1,4 +1,3 @@
-import asyncio
 import os
 from datetime import datetime, timezone
 
@@ -11,7 +10,9 @@ from services.db import get_supabase
 from services.metrics import compute_metrics
 from services.risk import compute_risk_score
 
+# Two routers: strava-specific routes and the auth initiation route
 router = APIRouter(prefix="/strava", tags=["strava"])
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
 STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID", "")
 STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET", "")
@@ -20,10 +21,27 @@ STRAVA_WEBHOOK_VERIFY_TOKEN = os.environ.get("STRAVA_WEBHOOK_VERIFY_TOKEN", "")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 
-# ── OAuth: initiate ───────────────────────────────────────────────────────────
+# ── Auth: runner login via Strava ─────────────────────────────────────────────
+
+@auth_router.get("/strava")
+def strava_login():
+    """Initiate Strava OAuth for runner login (no existing account required)."""
+    auth_url = (
+        "https://www.strava.com/oauth/authorize"
+        f"?client_id={STRAVA_CLIENT_ID}"
+        f"&redirect_uri={STRAVA_REDIRECT_URI}"
+        "&response_type=code"
+        "&scope=read,activity:read_all"
+        "&state=login"
+    )
+    return RedirectResponse(url=auth_url)
+
+
+# ── Strava: connect existing account ─────────────────────────────────────────
 
 @router.get("/connect")
 def strava_connect(user_id: str = Query(...)):
+    """Initiate Strava OAuth to connect to an existing StrideSafe account."""
     auth_url = (
         "https://www.strava.com/oauth/authorize"
         f"?client_id={STRAVA_CLIENT_ID}"
@@ -35,7 +53,7 @@ def strava_connect(user_id: str = Query(...)):
     return RedirectResponse(url=auth_url)
 
 
-# ── OAuth: callback ───────────────────────────────────────────────────────────
+# ── OAuth: callback (shared by login and connect flows) ───────────────────────
 
 @router.get("/callback")
 async def strava_callback(
@@ -44,8 +62,9 @@ async def strava_callback(
     error: str = Query(default=""),
 ):
     if error or not code or not state:
-        return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?strava=error")
+        return RedirectResponse(url=f"{FRONTEND_URL}/login?strava=error")
 
+    # Exchange code for tokens
     try:
         async with httpx.AsyncClient() as client:
             token_resp = await client.post(
@@ -59,26 +78,139 @@ async def strava_callback(
                 timeout=15.0,
             )
         if token_resp.status_code != 200:
-            return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?strava=error")
+            return RedirectResponse(url=f"{FRONTEND_URL}/login?strava=error")
+    except Exception:
+        return RedirectResponse(url=f"{FRONTEND_URL}/login?strava=error")
 
-        token_data = token_resp.json()
-        athlete = token_data.get("athlete", {})
-        expires_at = int(datetime.now(timezone.utc).timestamp()) + int(
-            token_data.get("expires_in", 21600)
+    token_data = token_resp.json()
+    athlete = token_data.get("athlete", {})
+    access_token = token_data["access_token"]
+    refresh_token = token_data["refresh_token"]
+    token_expires_at = int(datetime.now(timezone.utc).timestamp()) + int(
+        token_data.get("expires_in", 21600)
+    )
+    strava_athlete_id = athlete.get("id")
+
+    # ── Login flow (state == "login") ─────────────────────────────────────────
+    if state == "login":
+        return await _handle_login_flow(
+            athlete=athlete,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_expires_at=token_expires_at,
+            strava_athlete_id=strava_athlete_id,
         )
 
+    # ── Connect flow (state == user_id UUID) ──────────────────────────────────
+    return _handle_connect_flow(
+        user_id=state,
+        athlete=athlete,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_expires_at=token_expires_at,
+        strava_athlete_id=strava_athlete_id,
+    )
+
+
+async def _handle_login_flow(
+    athlete: dict,
+    access_token: str,
+    refresh_token: str,
+    token_expires_at: int,
+    strava_athlete_id: int,
+) -> RedirectResponse:
+    """Find-or-create a Supabase user for this Strava athlete, then sign them in."""
+    # Derive email: Strava only returns it with profile:read_all scope,
+    # so fall back to a synthetic address tied to the athlete ID.
+    email = athlete.get("email") or f"strava_{strava_athlete_id}@stridesafe.internal"
+    first = athlete.get("firstname") or ""
+    last = athlete.get("lastname") or ""
+    full_name = f"{first} {last}".strip() or f"Athlete {strava_athlete_id}"
+
+    supabase = get_supabase()
+
+    # Find or create the Supabase auth user
+    try:
+        create_resp = supabase.auth.admin.create_user(
+            {
+                "email": email,
+                "email_confirm": True,
+                "user_metadata": {"full_name": full_name},
+            }
+        )
+        user_id = create_resp.user.id
+    except Exception:
+        # User already exists — look up via profiles table
+        existing = (
+            supabase.table("profiles")
+            .select("id")
+            .eq("email", email)
+            .limit(1)
+            .execute()
+        )
+        if not existing.data:
+            return RedirectResponse(url=f"{FRONTEND_URL}/login?strava=error")
+        user_id = existing.data[0]["id"]
+
+    # Upsert profile (role=runner, locked)
+    supabase.table("profiles").upsert(
+        {
+            "id": user_id,
+            "email": email,
+            "full_name": full_name,
+            "role": "runner",
+        },
+        on_conflict="id",
+    ).execute()
+
+    # Upsert Strava connection
+    supabase.table("strava_connections").upsert(
+        {
+            "user_id": user_id,
+            "strava_athlete_id": strava_athlete_id,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_expires_at": token_expires_at,
+        },
+        on_conflict="user_id",
+    ).execute()
+
+    # Generate a magic-link session and redirect the browser to it
+    try:
+        link_resp = supabase.auth.admin.generate_link(
+            {
+                "type": "magiclink",
+                "email": email,
+                "options": {"redirect_to": f"{FRONTEND_URL}/dashboard"},
+            }
+        )
+        action_link = link_resp.properties.action_link
+        return RedirectResponse(url=action_link)
+    except Exception:
+        return RedirectResponse(url=f"{FRONTEND_URL}/login?strava=error")
+
+
+def _handle_connect_flow(
+    user_id: str,
+    athlete: dict,
+    access_token: str,
+    refresh_token: str,
+    token_expires_at: int,
+    strava_athlete_id: int,
+) -> RedirectResponse:
+    """Connect Strava to an already-authenticated StrideSafe account."""
+    try:
         supabase = get_supabase()
         supabase.table("strava_connections").upsert(
             {
-                "user_id": state,
-                "strava_athlete_id": athlete.get("id"),
-                "access_token": token_data["access_token"],
-                "refresh_token": token_data["refresh_token"],
-                "token_expires_at": expires_at,
+                "user_id": user_id,
+                "strava_athlete_id": strava_athlete_id,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "token_expires_at": token_expires_at,
             },
             on_conflict="user_id",
         ).execute()
-
     except Exception:
         return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?strava=error")
 

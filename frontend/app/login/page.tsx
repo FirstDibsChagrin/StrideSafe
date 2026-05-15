@@ -1,19 +1,25 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useState } from 'react'
 
 import { createClient } from '@/lib/supabase/client'
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'https://stridesafe-production.up.railway.app'
+
 type Mode = 'signin' | 'signup'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const stravaError = searchParams.get('strava') === 'error'
+
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(stravaError ? 'Strava sign-in failed. Please try again.' : null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -70,88 +76,134 @@ export default function LoginPage() {
         <p className="mt-1 text-sm text-gray-500">Welcome to StrideSafe</p>
       </div>
 
-      <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-        {/* Mode toggle */}
-        <div className="mb-6 flex rounded-lg border border-gray-200 p-1 gap-1">
-          <button
-            type="button"
-            onClick={() => switchMode('signin')}
-            className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${
-              mode === 'signin' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'
-            }`}
+      <div className="w-full max-w-sm space-y-4">
+        {/* ── Runner: Strava login ── */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+            Runners
+          </p>
+          <p className="text-sm text-gray-600 mb-4">
+            Sign in with your Strava account — no password needed.
+          </p>
+          {error && stravaError && (
+            <p className="mb-3 text-sm text-red-600">{error}</p>
+          )}
+          <a
+            href={`${API_URL}/auth/strava`}
+            className="flex w-full items-center justify-center gap-3 rounded-lg py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: '#FC4C02' }}
           >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('signup')}
-            className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${
-              mode === 'signup' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Sign Up
-          </button>
+            {/* Strava bolt logo */}
+            <svg viewBox="0 0 24 24" className="h-5 w-5 fill-white" aria-hidden="true">
+              <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+            </svg>
+            Continue with Strava
+          </a>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
+        {/* Divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 border-t border-gray-200" />
+          <span className="text-xs text-gray-400">or sign in as a coach</span>
+          <div className="flex-1 border-t border-gray-200" />
+        </div>
+
+        {/* ── Coach: email/password ── */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">
+            Coaches
+          </p>
+
+          {/* Mode toggle */}
+          <div className="mb-5 flex rounded-lg border border-gray-200 p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => switchMode('signin')}
+              className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${
+                mode === 'signin' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode('signup')}
+              className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${
+                mode === 'signup' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Sign Up
+            </button>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          {mode === 'signup' && (
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 type="password"
                 required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
-          )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {successMessage && <p className="text-sm text-green-700">{successMessage}</p>}
+            {mode === 'signup' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading
-              ? mode === 'signin'
-                ? 'Signing in…'
-                : 'Creating account…'
-              : mode === 'signin'
-                ? 'Sign In'
-                : 'Create Account'}
-          </button>
-        </form>
+            {error && !stravaError && <p className="text-sm text-red-600">{error}</p>}
+            {successMessage && <p className="text-sm text-green-700">{successMessage}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-md bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading
+                ? mode === 'signin'
+                  ? 'Signing in…'
+                  : 'Creating account…'
+                : mode === 'signin'
+                  ? 'Sign In'
+                  : 'Create Account'}
+            </button>
+          </form>
+        </div>
       </div>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   )
 }

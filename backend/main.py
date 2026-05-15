@@ -7,7 +7,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes.strava import router as strava_router
+from routes.strava import auth_router, router as strava_router
 from routes.metrics import router as metrics_router
 from routes.risk import router as risk_router
 
@@ -22,6 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(strava_router)
 app.include_router(metrics_router)
 app.include_router(risk_router)
