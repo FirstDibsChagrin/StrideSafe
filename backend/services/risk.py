@@ -14,18 +14,17 @@ def _load_ml():
     if _model is not None:
         return _model, _feature_names
 
-    # Resolve paths relative to this file: backend/services/ → repo-root/ml/
-    base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    model_path = os.path.join(base, "ml", "model.pkl")
-    features_path = os.path.join(base, "ml", "feature_names.json")
+    # backend/services/risk.py → ../../ml/
+    MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'ml', 'model.pkl')
+    FEATURES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'ml', 'feature_names.json')
 
-    if not os.path.exists(model_path) or not os.path.exists(features_path):
+    if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
         return None, None
 
     try:
         import joblib
-        _model = joblib.load(model_path)
-        with open(features_path) as f:
+        _model = joblib.load(MODEL_PATH)
+        with open(FEATURES_PATH) as f:
             _feature_names = json.load(f)
     except Exception:
         _model = None
