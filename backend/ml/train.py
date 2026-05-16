@@ -242,6 +242,7 @@ def load_data() -> tuple[pd.DataFrame, list[str]]:
             os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
             df.to_csv(DATA_PATH, index=False)
             print(f"Saved mapped data → {DATA_PATH}")
+            print("[train] Using Kaggle dataset: shashwatwork/injury-prediction-for-competitive-runners")
             return df, features
         except Exception as exc:
             print(f"Column mapping failed: {exc}\nFalling back.")
@@ -256,11 +257,13 @@ def load_data() -> tuple[pd.DataFrame, list[str]]:
             if available:
                 df = df[available + ["injury_occurred"]].dropna()
                 print(f"Using {len(available)} features from local CSV.")
+                print(f"[train] Using local CSV: {DATA_PATH}")
                 return df, available
         print("Local CSV missing required columns — falling back to synthetic.")
 
     # 3. Synthetic
     print("\nGenerating synthetic training data.")
+    print("[train] Kaggle unavailable — using synthetic data")
     os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
     df = generate_synthetic_data(n=500)
     df.to_csv(DATA_PATH, index=False)

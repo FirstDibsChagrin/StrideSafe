@@ -5,9 +5,9 @@
 
 [build]
 builder = "nixpacks"
-buildCommand = "pip install -r requirements.txt && pip install kagglehub && python ml/train.py"
+buildCommand = "pip install -r requirements.txt && pip install kagglehub"
 
 [deploy]
-startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+startCommand = "python ml/train.py && uvicorn main:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/health"
-healthcheckTimeout = 60
+healthcheckTimeout = 120
