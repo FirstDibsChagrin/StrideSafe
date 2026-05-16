@@ -14,9 +14,9 @@ def _load_ml():
     if _model is not None:
         return _model, _feature_names
 
-    # backend/services/risk.py → ../../ml/
-    MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'ml', 'model.pkl')
-    FEATURES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'ml', 'feature_names.json')
+    # backend/services/risk.py → ../ml/
+    MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'ml', 'model.pkl')
+    FEATURES_PATH = os.path.join(os.path.dirname(__file__), '..', 'ml', 'feature_names.json')
 
     if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
         return None, None
