@@ -14,15 +14,15 @@ export default async function OnboardingPage() {
     redirect('/login')
   }
 
-  // If already onboarded, skip to dashboard
+  // If already onboarded, redirect to the correct dashboard based on role
   const { data: profile } = await supabase
     .from('profiles')
-    .select('team_id')
-    .eq('user_id', user.id)
+    .select('role,team_id')
+    .eq('id', user.id)
     .maybeSingle()
 
   if (profile?.team_id) {
-    redirect('/dashboard')
+    redirect(profile.role === 'coach' ? '/coach' : '/dashboard')
   }
 
   // Fetch all teams for the team-selection step
@@ -38,7 +38,7 @@ export default async function OnboardingPage() {
         <p className="mt-2 text-gray-500">Let&apos;s get your account set up in three quick steps.</p>
       </div>
       <div className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-        <OnboardingFlow userId={user.id} teams={teams ?? []} />
+        <OnboardingFlow userId={user.id} teams={teams ?? []} lockedRole={profile?.role as 'runner' | 'coach' | null ?? null} />
       </div>
     </main>
   )

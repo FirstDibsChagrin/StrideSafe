@@ -33,3 +33,7 @@ ml/data/
 .DS_Store
 *.pem
 .vercel
+
+# ML — generated artifacts, not committed
+ml/model.pkl
+ml/data/

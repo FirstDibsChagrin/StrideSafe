@@ -16,6 +16,8 @@ export default function SyncButton({
   const [syncing, setSyncing] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://stridesafe-production.up.railway.app'
+
   if (!hasStravaConnection) {
     return (
       <a
@@ -31,8 +33,7 @@ export default function SyncButton({
     setSyncing(true)
     setMessage(null)
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000'
-      const res = await fetch(`${backendUrl}/strava/sync`, {
+      const res = await fetch(`${apiUrl}/strava/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId }),
