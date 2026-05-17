@@ -59,9 +59,14 @@ function LoginContent() {
         setPassword('')
         setConfirmPassword('')
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+        const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
         if (signInError) throw signInError
-        router.push('/dashboard')
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user!.id)
+          .maybeSingle()
+        router.push(profile?.role === 'coach' ? '/coach' : '/dashboard')
         router.refresh()
       }
     } catch (err) {
