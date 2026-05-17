@@ -1,3 +1,16 @@
+import os, json, pathlib
+
+# Write Kaggle credentials from env vars so kagglehub can find them
+_kaggle_user = os.environ.get("KAGGLE_USERNAME")
+_kaggle_key  = os.environ.get("KAGGLE_KEY")
+if _kaggle_user and _kaggle_key:
+    _kaggle_dir = pathlib.Path.home() / ".kaggle"
+    _kaggle_dir.mkdir(exist_ok=True)
+    _cred_file = _kaggle_dir / "kaggle.json"
+    _cred_file.write_text(json.dumps({"username": _kaggle_user, "key": _kaggle_key}))
+    _cred_file.chmod(0o600)
+    print(f"[train] Kaggle credentials written for user: {_kaggle_user}")
+
 """
 StrideSafe ML Training Pipeline
 ================================
