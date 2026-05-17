@@ -178,7 +178,6 @@ def train():
         subsample=0.8,
         colsample_bytree=0.8,
         scale_pos_weight=scale_pos_weight,
-        use_label_encoder=False,
         eval_metric="logloss",
         random_state=42,
         n_jobs=-1,
@@ -186,7 +185,6 @@ def train():
 
     print(f"[train] Training XGBoost (scale_pos_weight={scale_pos_weight:.1f}) ...")
     model.fit(X, y)
-    model.set_attr(source=source)
 
     MODEL_OUT.parent.mkdir(parents=True, exist_ok=True)
     with open(MODEL_OUT, "wb") as f:
