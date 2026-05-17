@@ -40,15 +40,33 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // Redirect authenticated users away from / and /login to the right dashboard
+  if (user && (pathname === '/' || pathname === '/login')) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role,team_id')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profile?.role && profile?.team_id) {
+      return NextResponse.redirect(
+        new URL(profile.role === 'coach' ? '/coach' : '/dashboard', request.url),
+      )
+    }
+    if (pathname === '/login') {
+      return NextResponse.redirect(new URL('/onboarding', request.url))
+    }
+  }
+
   // For authenticated users on protected pages, ensure onboarding is complete
   if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/coach'))) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('team_id')
+      .select('role,team_id')
       .eq('id', user.id)
       .maybeSingle()
 
-    if (!profile || !profile.team_id) {
+    if (!profile || !profile.role || !profile.team_id) {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
   }

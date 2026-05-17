@@ -14,18 +14,20 @@ def _load_ml():
     if _model is not None:
         return _model, _feature_names
 
-    # backend/services/risk.py → ../../ml/
-    MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'ml', 'model.pkl')
-    FEATURES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'ml', 'feature_names.json')
+    # backend/services/risk.py → ../ml/
+    MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'ml', 'model.pkl')
+    FEATURES_PATH = os.path.join(os.path.dirname(__file__), '..', 'ml', 'feature_names.json')
 
     if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
         return None, None
 
     try:
-        import joblib
-        _model = joblib.load(MODEL_PATH)
-        with open(FEATURES_PATH) as f:
-            _feature_names = json.load(f)
+        import pickle
+        with open(MODEL_PATH, "rb") as f:
+            _model = pickle.load(f)
+        meta = json.loads(open(FEATURES_PATH).read())
+        # feature_names.json is either a plain list (old) or {"features": [...]} (new)
+        _feature_names = meta["features"] if isinstance(meta, dict) else meta
     except Exception:
         _model = None
         _feature_names = None
@@ -131,16 +133,36 @@ def compute_risk_score(user_id: str) -> dict:
     if model is not None and feature_names is not None:
         try:
             import numpy as np
+            km_pct_change = (
+                (weekly_mileage - prev_weekly) / prev_weekly
+                if prev_weekly > 0 else 0.0
+            )
             feature_values = {
-                "acwr": acwr,
-                "weekly_mileage_km": weekly_mileage,
-                "days_since_rest": float(days_since_rest),
+                # Kaggle model features
+                "weekly_km":           weekly_mileage,
+                "weekly_km_w1":        prev_weekly,
+                "weekly_km_w2":        0.0,
+                "acwr":                acwr,
+                "km_pct_change":       km_pct_change,
+                "num_runs":            float(len(activities)),
+                "rest_days":           float(max(0, 7 - days_since_rest)),
+                "max_single_run_km":   0.0,
+                "high_intensity_km":   0.0,
+                "tough_sessions":      0.0,
+                "avg_exertion":        fatigue_level / 10.0,
+                "avg_recovery":        (10 - fatigue_level) / 10.0,
+                "avg_training_success": 0.5,
+                "cross_training_hours": 0.0,
+                "strength_sessions":   0.0,
+                # Legacy feature names (synthetic model fallback)
+                "weekly_mileage_km":   weekly_mileage,
+                "days_since_rest":     float(days_since_rest),
                 "avg_pace_sec_per_km": avg_pace,
-                "fatigue_level": float(fatigue_level),
-                "pain_level": float(pain_level),
-                "stress_level": float(stress_level),
-                "age": float(age),
-                "gender_encoded": float(gender_encoded),
+                "fatigue_level":       float(fatigue_level),
+                "pain_level":          float(pain_level),
+                "stress_level":        float(stress_level),
+                "age":                 float(age),
+                "gender_encoded":      float(gender_encoded),
             }
             vector = np.array([[feature_values.get(f, 0.0) for f in feature_names]])
             prob = float(model.predict_proba(vector)[0][1])  # P(injury)

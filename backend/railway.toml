@@ -1,13 +1,13 @@
 # To train on the real Kaggle dataset, set these in Railway → Variables:
 #   KAGGLE_USERNAME  — your Kaggle account username
 #   KAGGLE_KEY       — your Kaggle API key
-# Without them, train.py falls back to synthetic data automatically.
+# Without them, ml/train.py falls back to synthetic data automatically.
 
 [build]
 builder = "nixpacks"
-buildCommand = "pip install -r requirements.txt && cd ../ml && pip install -r requirements.txt && python train.py"
+buildCommand = "pip install -r requirements.txt && pip install kagglehub"
 
 [deploy]
-startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+startCommand = "python ml/train.py && uvicorn main:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/health"
-healthcheckTimeout = 60
+healthcheckTimeout = 120
