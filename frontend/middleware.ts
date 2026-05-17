@@ -44,11 +44,11 @@ export async function middleware(request: NextRequest) {
   if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/coach'))) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('team_id')
+      .select('role,team_id')
       .eq('id', user.id)
       .maybeSingle()
 
-    if (!profile || !profile.team_id) {
+    if (!profile || !profile.role || !profile.team_id) {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
   }

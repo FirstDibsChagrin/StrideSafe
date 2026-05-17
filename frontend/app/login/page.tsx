@@ -19,6 +19,7 @@ function LoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [signupRole, setSignupRole] = useState<'coach' | 'runner'>('coach')
   const [error, setError] = useState<string | null>(stravaError ? 'Strava sign-in failed. Please try again.' : null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -52,6 +53,7 @@ function LoginContent() {
       if (mode === 'signup') {
         const { error: signUpError } = await supabase.auth.signUp({ email, password })
         if (signUpError) throw signUpError
+        localStorage.setItem('pendingRole', signupRole)
         setSuccessMessage('Check your email to confirm your account, then sign in.')
         setEmail('')
         setPassword('')
@@ -194,21 +196,58 @@ function LoginContent() {
             </div>
 
             {mode === 'signup' && (
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#6b6b80' }}>
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  style={inputStyle}
-                  onFocus={e => (e.target.style.borderColor = '#f97316')}
-                  onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
-                />
-              </div>
+              <>
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: '#6b6b80' }}>
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    style={inputStyle}
+                    onFocus={e => (e.target.style.borderColor = '#f97316')}
+                    onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
+                  />
+                </div>
+
+                {/* Role selector */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: '#9ca3af' }}>
+                    I am a…
+                  </label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setSignupRole('coach')}
+                      style={{
+                        flex: 1, padding: '12px', borderRadius: '12px', border: '1.5px solid',
+                        borderColor: signupRole === 'coach' ? '#f97316' : '#2a2a3a',
+                        background: signupRole === 'coach' ? '#2d1200' : '#1e1e2e',
+                        color: signupRole === 'coach' ? '#f97316' : '#9ca3af',
+                        fontWeight: 500, cursor: 'pointer', fontSize: '14px',
+                      }}
+                    >
+                      🧑‍💼 Coach
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSignupRole('runner')}
+                      style={{
+                        flex: 1, padding: '12px', borderRadius: '12px', border: '1.5px solid',
+                        borderColor: signupRole === 'runner' ? '#f97316' : '#2a2a3a',
+                        background: signupRole === 'runner' ? '#2d1200' : '#1e1e2e',
+                        color: signupRole === 'runner' ? '#f97316' : '#9ca3af',
+                        fontWeight: 500, cursor: 'pointer', fontSize: '14px',
+                      }}
+                    >
+                      🏃 Runner
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
 
             {error && !stravaError && <p className="text-sm text-red-400">{error}</p>}

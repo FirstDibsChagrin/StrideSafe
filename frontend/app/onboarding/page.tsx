@@ -32,12 +32,20 @@ export default async function OnboardingPage() {
     .order('name', { ascending: true })
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-16">
+    <main
+      className="flex min-h-screen flex-col items-center justify-center px-4 py-16"
+      style={{ background: '#0d0d14' }}
+    >
       <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome to StrideSafe</h1>
-        <p className="mt-2 text-gray-500">Let&apos;s get your account set up in three quick steps.</p>
+        <h1 className="text-3xl font-bold" style={{ color: '#f97316' }}>Welcome to StrideSafe</h1>
+        <p className="mt-2 text-sm" style={{ color: '#9ca3af' }}>
+          Let&apos;s get your account set up in three quick steps.
+        </p>
       </div>
-      <div className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+      <div
+        className="w-full max-w-lg rounded-2xl p-8"
+        style={{ background: '#13131f', border: '1px solid #2a2a3a' }}
+      >
         <OnboardingFlow userId={user.id} teams={teams ?? []} lockedRole={profile?.role as 'runner' | 'coach' | null ?? null} />
       </div>
     </main>
