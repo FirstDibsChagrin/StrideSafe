@@ -33,6 +33,4 @@ build/
 # ML — generated artifacts, not committed
 backend/ml/model.pkl
 backend/ml/feature_names.json
-backend/ml/data/
-# But keep the committed training CSV
-!backend/ml/data/week_approach_maskedID_timeseries.csv
+backend/ml/data/training_data.csv
