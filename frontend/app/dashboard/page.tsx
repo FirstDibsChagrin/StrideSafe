@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AccountMenu from '@/components/AccountMenu'
 import ACWRChart from './ACWRChart'
+import CheckInCard from './CheckInCard'
 import CheckinForm from './CheckinForm'
 import InjuryModal from './InjuryModal'
 import SyncButton from './SyncButton'
@@ -250,6 +251,9 @@ export default async function DashboardPage() {
             <WeeklyMileageChart data={weeklyData} />
           </div>
         </div>
+
+        {/* Check-In Card */}
+        <CheckInCard />
 
         {/* Recent Runs */}
         <div className="rounded-xl border border-gray-200 bg-white p-6">
