@@ -309,7 +309,7 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
               />
               <div
                 className="max-h-56 overflow-y-auto rounded-xl divide-y"
-                style={{ border: '1px solid #2a2a3a', divideColor: '#2a2a3a' }}
+                style={{ border: '1px solid #2a2a3a' }}
               >
                 {filteredTeams.length === 0 ? (
                   <p className="px-3 py-4 text-sm text-center" style={{ color: '#6b6b80' }}>
