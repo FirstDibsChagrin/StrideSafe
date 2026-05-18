@@ -73,10 +73,14 @@ export default async function CoachPage() {
 
   if (runnerIds.length === 0) {
     return (
-      <main className="min-h-screen bg-gray-50 p-6">
+      <main className="min-h-screen p-6" style={{ background: '#0d0d14' }}>
         <div className="mx-auto max-w-4xl">
-          <h1 className="text-2xl font-bold text-gray-900">Coach Dashboard</h1>
-          <p className="mt-4 text-sm text-gray-500">No runners on your team yet.</p>
+          <div className="flex items-center justify-between mb-8">
+            <span className="text-xl font-bold tracking-tight" style={{ color: '#f97316' }}>StrideSafe</span>
+            <AccountMenu email={user!.email ?? ''} />
+          </div>
+          <h1 className="text-2xl font-bold" style={{ color: '#e2e2f0' }}>Coach Dashboard</h1>
+          <p className="mt-4 text-sm" style={{ color: '#6b6b80' }}>No runners on your team yet.</p>
         </div>
       </main>
     )
@@ -155,20 +159,20 @@ export default async function CoachPage() {
     )
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
+    <main className="min-h-screen p-6" style={{ background: '#0d0d14' }}>
       <div className="mx-auto max-w-4xl space-y-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Coach Dashboard</h1>
-            <p className="text-sm text-gray-500">
-              Team overview — {runnersData.length} runner{runnersData.length !== 1 ? 's' : ''}
+            <span className="text-xl font-bold tracking-tight" style={{ color: '#f97316' }}>StrideSafe</span>
+            <p className="text-sm mt-0.5" style={{ color: '#6b6b80' }}>
+              {runnersData.length} runner{runnersData.length !== 1 ? 's' : ''} on your team
             </p>
           </div>
-          <AccountMenu email={user.email ?? ''} />
+          <AccountMenu email={user!.email ?? ''} />
         </div>
 
         {/* Legend */}
-        <div className="flex gap-4 text-xs text-gray-500">
+        <div className="flex gap-4 text-xs" style={{ color: '#6b6b80' }}>
           <span className="flex items-center gap-1">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-400"></span> Low (&lt;40)
           </span>
@@ -179,21 +183,24 @@ export default async function CoachPage() {
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-400"></span> High (&gt;70)
           </span>
           <span className="flex items-center gap-1">
-            <span className="text-red-500">⚑</span> Flag = risk &gt; 70
+            <span style={{ color: '#ef4444' }}>⚑</span> Flag = risk &gt; 70
           </span>
         </div>
 
         {/* Runner list */}
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #2a2a3a' }}>
           {/* Table header */}
-          <div className="flex items-center gap-4 border-b border-gray-100 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <div
+            className="flex items-center gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wide"
+            style={{ background: '#13131f', borderBottom: '1px solid #2a2a3a', color: '#6b6b80' }}
+          >
             <div className="flex-1">Runner</div>
             <div className="flex-shrink-0 w-16 text-center">Risk</div>
             <div className="flex-shrink-0 w-16 text-right">ACWR</div>
             <div className="flex-shrink-0 w-20 text-right">Wk km</div>
             <div className="flex-shrink-0 w-4"></div>
           </div>
-          <RunnerList runners={runnersData} coachId={user.id} />
+          <RunnerList runners={runnersData} coachId={user!.id} />
         </div>
       </div>
     </main>

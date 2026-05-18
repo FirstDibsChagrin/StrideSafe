@@ -51,10 +51,10 @@ interface RunnerListProps {
   coachId: string
 }
 
-function riskBadgeClass(score: number) {
-  if (score >= 70) return 'bg-red-100 text-red-700'
-  if (score >= 40) return 'bg-yellow-100 text-yellow-700'
-  return 'bg-green-100 text-green-700'
+function riskBadgeStyle(score: number): React.CSSProperties {
+  if (score >= 70) return { background: 'rgba(239,68,68,0.15)', color: '#f87171' }
+  if (score >= 40) return { background: 'rgba(250,204,21,0.15)', color: '#fbbf24' }
+  return { background: 'rgba(74,222,128,0.15)', color: '#4ade80' }
 }
 
 function formatPace(secPerKm: number | null) {
@@ -64,13 +64,12 @@ function formatPace(secPerKm: number | null) {
   return `${min}:${sec.toString().padStart(2, '0')}`
 }
 
-function RunnerRow({
-  runner,
-  coachId,
-}: {
-  runner: RunnerData
-  coachId: string
-}) {
+const inp: React.CSSProperties = {
+  background: '#1e1e2e', border: '1px solid #2a2a3a', color: '#e2e2f0',
+  borderRadius: '8px', padding: '8px 12px', width: '100%', fontSize: '13px', outline: 'none',
+}
+
+function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string }) {
   const [expanded, setExpanded] = useState(false)
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
@@ -92,11 +91,7 @@ function RunnerRow({
       setNote('')
       setNoteSaved(true)
       setTimeout(() => setNoteSaved(false), 3000)
-    } catch {
-      // silent
-    } finally {
-      setSaving(false)
-    }
+    } catch { /* silent */ } finally { setSaving(false) }
   }
 
   const handleConfirmInjury = async (injuryId: string) => {
@@ -108,97 +103,92 @@ function RunnerRow({
         body: JSON.stringify({ injury_id: injuryId }),
       })
       setInjuries((prev) => prev.filter((i) => i.id !== injuryId))
-    } catch {
-      // silent
-    } finally {
-      setConfirmingId(null)
-    }
+    } catch { /* silent */ } finally { setConfirmingId(null) }
   }
 
   return (
-    <div className="border-b border-gray-100 last:border-b-0">
+    <div style={{ borderBottom: '1px solid #2a2a3a' }} className="last:border-b-0">
       {/* Summary row */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-4 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+        className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors"
+        style={{ background: expanded ? '#1a1a2e' : '#13131f' }}
+        onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = '#1a1a2e' }}
+        onMouseLeave={e => { if (!expanded) e.currentTarget.style.background = '#13131f' }}
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-900 truncate">
+            <span className="font-medium truncate" style={{ color: '#e2e2f0' }}>
               {runner.full_name ?? 'Unknown'}
             </span>
             {score !== null && score > 70 && (
-              <span title="High risk" className="text-red-500 text-base">⚑</span>
+              <span title="High risk" style={{ color: '#ef4444' }}>⚑</span>
             )}
           </div>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs mt-0.5" style={{ color: '#6b6b80' }}>
             Last sync: {runner.latestMetrics?.date ?? 'never'}
           </p>
         </div>
 
-        {/* Risk score badge */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 w-16 text-center">
           {score !== null ? (
             <span
-              className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${riskBadgeClass(score)}`}
+              className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold"
+              style={riskBadgeStyle(score)}
             >
               {score}
             </span>
           ) : (
-            <span className="text-xs text-gray-300">—</span>
+            <span className="text-xs" style={{ color: '#3a3a4a' }}>—</span>
           )}
         </div>
 
-        {/* ACWR */}
         <div className="flex-shrink-0 w-16 text-right">
-          <p className="text-xs text-gray-400">ACWR</p>
-          <p className="text-sm font-medium text-gray-700">
+          <p className="text-xs" style={{ color: '#6b6b80' }}>ACWR</p>
+          <p className="text-sm font-medium" style={{ color: '#e2e2f0' }}>
             {runner.latestMetrics?.acwr?.toFixed(2) ?? '—'}
           </p>
         </div>
 
-        {/* Weekly mileage */}
         <div className="flex-shrink-0 w-20 text-right">
-          <p className="text-xs text-gray-400">Wk km</p>
-          <p className="text-sm font-medium text-gray-700">
+          <p className="text-xs" style={{ color: '#6b6b80' }}>Wk km</p>
+          <p className="text-sm font-medium" style={{ color: '#e2e2f0' }}>
             {runner.latestMetrics?.weekly_mileage_km?.toFixed(1) ?? '—'}
           </p>
         </div>
 
-        <span className="flex-shrink-0 text-gray-400 text-xs">{expanded ? '▲' : '▼'}</span>
+        <span className="flex-shrink-0 text-xs" style={{ color: '#6b6b80' }}>{expanded ? '▲' : '▼'}</span>
       </button>
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="px-4 pb-5 space-y-5 bg-gray-50">
+        <div className="px-4 pb-5 space-y-5" style={{ background: '#0f0f1a' }}>
           {/* Last 5 runs */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+          <div className="pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#6b6b80' }}>
               Last 5 Runs
             </p>
             {runner.lastRuns.length === 0 ? (
-              <p className="text-sm text-gray-400">No runs on record.</p>
+              <p className="text-sm" style={{ color: '#6b6b80' }}>No runs on record.</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-gray-400 border-b">
-                    <th className="pb-1 pr-3">Date</th>
-                    <th className="pb-1 pr-3">Distance</th>
-                    <th className="pb-1 pr-3">Pace</th>
-                    <th className="pb-1">Type</th>
+                  <tr className="text-left text-xs" style={{ color: '#6b6b80', borderBottom: '1px solid #2a2a3a' }}>
+                    <th className="pb-1 pr-3 font-medium">Date</th>
+                    <th className="pb-1 pr-3 font-medium">Distance</th>
+                    <th className="pb-1 pr-3 font-medium">Pace</th>
+                    <th className="pb-1 font-medium">Type</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody>
                   {runner.lastRuns.map((run) => (
-                    <tr key={run.strava_activity_id} className="text-gray-700">
-                      <td className="py-1 pr-3">{run.activity_date?.slice(0, 10) ?? '—'}</td>
-                      <td className="py-1 pr-3">
-                        {run.distance_meters != null
-                          ? (run.distance_meters / 1000).toFixed(2) + ' km'
-                          : '—'}
+                    <tr key={run.strava_activity_id} style={{ color: '#e2e2f0', borderBottom: '1px solid #1e1e2e' }}>
+                      <td className="py-1.5 pr-3">{run.activity_date?.slice(0, 10) ?? '—'}</td>
+                      <td className="py-1.5 pr-3">
+                        {run.distance_meters != null ? (run.distance_meters / 1000).toFixed(2) + ' km' : '—'}
                       </td>
-                      <td className="py-1 pr-3">{formatPace(run.avg_pace_sec_per_km)}/km</td>
-                      <td className="py-1">{run.workout_type ?? '—'}</td>
+                      <td className="py-1.5 pr-3">{formatPace(run.avg_pace_sec_per_km)}/km</td>
+                      <td className="py-1.5">{run.workout_type ?? '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -208,40 +198,40 @@ function RunnerRow({
 
           {/* Latest check-in */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+            <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#6b6b80' }}>
               Latest Check-in{runner.latestCheckin ? ` (${runner.latestCheckin.checkin_date})` : ''}
             </p>
             {runner.latestCheckin ? (
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-700">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm" style={{ color: '#e2e2f0' }}>
                 <span>Pain: <strong>{runner.latestCheckin.pain_level ?? '—'}</strong>/10</span>
                 <span>Fatigue: <strong>{runner.latestCheckin.fatigue_level ?? '—'}</strong>/10</span>
                 <span>Stress: <strong>{runner.latestCheckin.stress_level ?? '—'}</strong>/10</span>
                 <span>Sleep: <strong>{runner.latestCheckin.sleep_hours ?? '—'}</strong> hrs</span>
                 {runner.latestCheckin.soreness_notes && (
-                  <span className="col-span-2 text-gray-500 italic">
+                  <span className="col-span-2 italic" style={{ color: '#9ca3af' }}>
                     &ldquo;{runner.latestCheckin.soreness_notes}&rdquo;
                   </span>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-gray-400">No check-in on record.</p>
+              <p className="text-sm" style={{ color: '#6b6b80' }}>No check-in on record.</p>
             )}
           </div>
 
           {/* Risk breakdown */}
           {runner.latestRisk && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#6b6b80' }}>
                 Risk Breakdown
               </p>
-              <div className="text-sm text-gray-700 space-y-1">
+              <div className="text-sm space-y-1" style={{ color: '#e2e2f0' }}>
                 <p>Global score: <strong>{runner.latestRisk.global_score}</strong> / 100</p>
                 <p>Injury window: <strong>{runner.latestRisk.onset_days} days</strong></p>
                 {runner.latestRisk.recommendations?.length ? (
                   <ul className="mt-1 space-y-1">
                     {runner.latestRisk.recommendations.map((r, i) => (
-                      <li key={i} className="flex gap-1.5 text-gray-600">
-                        <span className="text-blue-400">•</span> {r}
+                      <li key={i} className="flex gap-1.5" style={{ color: '#9ca3af' }}>
+                        <span style={{ color: '#f97316' }}>•</span> {r}
                       </li>
                     ))}
                   </ul>
@@ -253,28 +243,27 @@ function RunnerRow({
           {/* Unconfirmed injuries */}
           {injuries.length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-orange-500 mb-2">
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#f97316' }}>
                 Unconfirmed Injuries
               </p>
               <div className="space-y-2">
                 {injuries.map((inj) => (
                   <div
                     key={inj.id}
-                    className="flex items-center justify-between rounded-md border border-orange-200 bg-orange-50 px-3 py-2"
+                    className="flex items-center justify-between rounded-lg px-3 py-2"
+                    style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)' }}
                   >
-                    <div className="text-sm text-orange-800">
-                      <p>
-                        {inj.injury_type ?? 'Injury reported'}
-                        {inj.body_location ? ` — ${inj.body_location}` : ''}
-                      </p>
+                    <div className="text-sm" style={{ color: '#e2e2f0' }}>
+                      <p>{inj.injury_type ?? 'Injury reported'}{inj.body_location ? ` — ${inj.body_location}` : ''}</p>
                       {inj.reported_at && (
-                        <p className="text-xs opacity-60">{inj.reported_at.slice(0, 10)}</p>
+                        <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{inj.reported_at.slice(0, 10)}</p>
                       )}
                     </div>
                     <button
                       onClick={() => handleConfirmInjury(inj.id)}
                       disabled={confirmingId === inj.id}
-                      className="ml-4 rounded-md bg-orange-500 px-3 py-1 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-60"
+                      className="ml-4 rounded-lg px-3 py-1 text-xs font-medium text-white disabled:opacity-60"
+                      style={{ background: '#f97316' }}
                     >
                       {confirmingId === inj.id ? 'Confirming…' : 'Confirm'}
                     </button>
@@ -286,7 +275,7 @@ function RunnerRow({
 
           {/* Coach note */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+            <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#6b6b80' }}>
               Add Note
             </p>
             <textarea
@@ -294,17 +283,20 @@ function RunnerRow({
               onChange={(e) => setNote(e.target.value)}
               rows={2}
               placeholder="Write a note for this runner…"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              style={inp}
+              onFocus={e => (e.target.style.borderColor = '#f97316')}
+              onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
             />
             <div className="flex items-center gap-3 mt-2">
               <button
                 onClick={handleSaveNote}
                 disabled={saving || !note.trim()}
-                className="rounded-md bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                style={{ background: '#f97316' }}
               >
                 {saving ? 'Saving…' : 'Save Note'}
               </button>
-              {noteSaved && <span className="text-xs text-green-600">Note saved!</span>}
+              {noteSaved && <span className="text-xs" style={{ color: '#4ade80' }}>Note saved!</span>}
             </div>
           </div>
         </div>
@@ -316,14 +308,14 @@ function RunnerRow({
 export default function RunnerList({ runners, coachId }: RunnerListProps) {
   if (runners.length === 0) {
     return (
-      <p className="px-4 py-6 text-sm text-gray-400">
+      <p className="px-4 py-6 text-sm" style={{ color: '#6b6b80', background: '#13131f' }}>
         No runners found for your team.
       </p>
     )
   }
 
   return (
-    <div className="divide-y divide-gray-100">
+    <div>
       {runners.map((runner) => (
         <RunnerRow key={runner.id} runner={runner} coachId={coachId} />
       ))}
