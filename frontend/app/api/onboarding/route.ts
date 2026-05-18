@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
     team_school,
   } = body
 
-  if (!role || !full_name) {
-    return NextResponse.json({ error: 'role and full_name are required' }, { status: 400 })
+  if (!role) {
+    return NextResponse.json({ error: 'role is required' }, { status: 400 })
   }
 
   let resolvedTeamId: string | null = team_id ?? null
@@ -67,9 +67,9 @@ export async function POST(req: NextRequest) {
       id: user.id,
       email: user.email,
       role,
-      full_name,
-      age: age ?? null,
-      gender: gender ?? null,
+      ...(full_name ? { full_name } : {}),
+      ...(age != null ? { age } : {}),
+      ...(gender ? { gender } : {}),
       team_id: resolvedTeamId,
     },
     { onConflict: 'id' },
@@ -77,6 +77,13 @@ export async function POST(req: NextRequest) {
 
   if (profileError) {
     return NextResponse.json({ error: profileError.message }, { status: 400 })
+  }
+
+  // For runners joining a team, record them in team_members
+  if (role === 'runner' && resolvedTeamId) {
+    await supabase
+      .from('team_members')
+      .upsert({ team_id: resolvedTeamId, user_id: user.id }, { onConflict: 'team_id,user_id' })
   }
 
   return NextResponse.json({ success: true, team_id: resolvedTeamId })

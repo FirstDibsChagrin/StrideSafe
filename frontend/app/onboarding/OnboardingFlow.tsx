@@ -31,17 +31,8 @@ const inp: React.CSSProperties = {
 export default function OnboardingFlow({ userId, teams, lockedRole }: OnboardingFlowProps) {
   const router = useRouter()
 
-  const [step, setStep] = useState(lockedRole ? 2 : 1)
-  const [role, setRole] = useState<Role | null>(() => {
-    if (lockedRole) return lockedRole
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('pendingRole') as Role) || null
-    }
-    return null
-  })
-  const [fullName, setFullName] = useState('')
-  const [age, setAge] = useState<number | ''>('')
-  const [gender, setGender] = useState('')
+  const [step, setStep] = useState<1 | 2>(lockedRole ? 2 : 1)
+  const [role, setRole] = useState<Role | null>(lockedRole ?? null)
   const [teamSearch, setTeamSearch] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
   const [createTeam, setCreateTeam] = useState(true)
@@ -56,9 +47,7 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
       (t.school ?? '').toLowerCase().includes(teamSearch.toLowerCase()),
   )
 
-  const canAdvanceStep2 = fullName.trim().length > 0
-
-  const canAdvanceStep3 = createTeam
+  const canSubmit = createTeam
     ? newTeamName.trim().length > 0
     : selectedTeamId !== null
 
@@ -72,9 +61,6 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
         body: JSON.stringify({
           user_id: userId,
           role,
-          full_name: fullName.trim(),
-          age: age !== '' ? age : null,
-          gender: gender.trim() || null,
           team_id: createTeam ? null : selectedTeamId,
           create_team: createTeam,
           team_name: newTeamName.trim(),
@@ -85,7 +71,6 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
         const data = await res.json().catch(() => ({}))
         throw new Error(data.error ?? 'Something went wrong')
       }
-      localStorage.removeItem('pendingRole')
       router.push(role === 'coach' ? '/coach' : '/dashboard')
       router.refresh()
     } catch (err) {
@@ -94,178 +79,91 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
     }
   }
 
-  const totalSteps = lockedRole ? 2 : 3
-  const displayStep = lockedRole ? step - 1 : step
+  const pickRole = (r: Role) => {
+    setRole(r)
+    // Reset team state when role changes
+    setCreateTeam(true)
+    setSelectedTeamId(null)
+    setNewTeamName('')
+    setNewTeamSchool('')
+    setError(null)
+    setStep(2)
+  }
 
   return (
     <div className="mx-auto max-w-lg">
       {/* Step indicator */}
       <div className="mb-8 flex items-center gap-2">
-        {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
+        {[1, 2].map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div
               className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
               style={
-                s === displayStep
+                s === step
                   ? { background: '#f97316', color: '#fff' }
-                  : s < displayStep
+                  : s < step
                     ? { background: 'rgba(249,115,22,0.2)', color: '#f97316' }
                     : { background: '#1e1e2e', color: '#6b6b80' }
               }
             >
               {s}
             </div>
-            {s < totalSteps && (
+            {s < 2 && (
               <div
                 className="h-px w-8"
-                style={{ background: s < displayStep ? '#f97316' : '#2a2a3a' }}
+                style={{ background: s < step ? '#f97316' : '#2a2a3a' }}
               />
             )}
           </div>
         ))}
       </div>
 
-      {/* ── Step 1: Role (only shown when role is not locked) ── */}
-      {step === 1 && !lockedRole && (
+      {/* ── Step 1: Role selection ── */}
+      {step === 1 && (
         <div className="space-y-6">
           <div>
-            <h2 className="text-xl font-bold" style={{ color: '#e2e2f0' }}>
-              Are you a runner or a coach?
+            <h2 className="text-2xl font-bold" style={{ color: '#e2e2f0' }}>
+              Who are you?
             </h2>
             <p className="mt-1 text-sm" style={{ color: '#9ca3af' }}>
-              This determines what you see on your dashboard.
+              Choose your role to get started.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <button
-              onClick={() => setRole('runner')}
-              className="rounded-xl p-6 text-left transition-colors"
+              onClick={() => pickRole('coach')}
+              className="rounded-2xl p-8 text-left transition-all hover:scale-[1.02]"
               style={{
-                border: `2px solid ${role === 'runner' ? '#f97316' : '#2a2a3a'}`,
-                background: role === 'runner' ? '#2d1200' : '#1e1e2e',
+                background: '#13131f',
+                border: `2px solid #2a2a3a`,
               }}
             >
-              <div className="text-3xl mb-2">🏃</div>
-              <p className="font-semibold" style={{ color: '#e2e2f0' }}>Runner</p>
-              <p className="mt-1 text-xs" style={{ color: '#9ca3af' }}>
-                Track your training and injury risk
+              <div className="text-4xl mb-3">🧑‍💼</div>
+              <p className="text-lg font-bold" style={{ color: '#e2e2f0' }}>Coach</p>
+              <p className="mt-1 text-sm" style={{ color: '#9ca3af' }}>
+                I manage a team
               </p>
             </button>
             <button
-              onClick={() => setRole('coach')}
-              className="rounded-xl p-6 text-left transition-colors"
+              onClick={() => pickRole('runner')}
+              className="rounded-2xl p-8 text-left transition-all hover:scale-[1.02]"
               style={{
-                border: `2px solid ${role === 'coach' ? '#f97316' : '#2a2a3a'}`,
-                background: role === 'coach' ? '#2d1200' : '#1e1e2e',
+                background: '#13131f',
+                border: `2px solid #2a2a3a`,
               }}
             >
-              <div className="text-3xl mb-2">📋</div>
-              <p className="font-semibold" style={{ color: '#e2e2f0' }}>Coach</p>
-              <p className="mt-1 text-xs" style={{ color: '#9ca3af' }}>
-                Monitor your team&apos;s health
+              <div className="text-4xl mb-3">🏃</div>
+              <p className="text-lg font-bold" style={{ color: '#e2e2f0' }}>Runner</p>
+              <p className="mt-1 text-sm" style={{ color: '#9ca3af' }}>
+                I train and race
               </p>
             </button>
           </div>
-          <button
-            disabled={!role}
-            onClick={() => setStep(2)}
-            className="w-full rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-40"
-            style={{ background: '#f97316' }}
-          >
-            Continue
-          </button>
         </div>
       )}
 
-      {/* ── Step 2: Personal info ── */}
+      {/* ── Step 2: Team setup ── */}
       {step === 2 && (
-        <div className="space-y-5">
-          <div>
-            <h2 className="text-xl font-bold" style={{ color: '#e2e2f0' }}>
-              Tell us about yourself
-            </h2>
-            <p className="mt-1 text-sm" style={{ color: '#9ca3af' }}>
-              {role === 'runner'
-                ? 'Used to personalise your injury risk model.'
-                : 'So your runners know who you are.'}
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#9ca3af' }}>
-              Full name <span style={{ color: '#ef4444' }}>*</span>
-            </label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Jane Smith"
-              style={inp}
-              onFocus={e => (e.target.style.borderColor = '#f97316')}
-              onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
-            />
-          </div>
-
-          {role === 'runner' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#9ca3af' }}>
-                  Age <span style={{ color: '#6b6b80' }} className="font-normal">(optional)</span>
-                </label>
-                <input
-                  type="number"
-                  min={10}
-                  max={100}
-                  value={age}
-                  onChange={(e) => setAge(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="16"
-                  style={{ ...inp, width: '7rem' }}
-                  onFocus={e => (e.target.style.borderColor = '#f97316')}
-                  onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#9ca3af' }}>
-                  Gender identity <span style={{ color: '#6b6b80' }} className="font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  placeholder="e.g. Female, Male, Non-binary…"
-                  style={inp}
-                  onFocus={e => (e.target.style.borderColor = '#f97316')}
-                  onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
-                />
-              </div>
-            </>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            {!lockedRole && (
-              <button
-                onClick={() => setStep(1)}
-                className="flex-1 rounded-xl py-2.5 text-sm font-semibold"
-                style={{ background: '#1e1e2e', border: '1px solid #2a2a3a', color: '#9ca3af' }}
-              >
-                Back
-              </button>
-            )}
-            <button
-              disabled={!canAdvanceStep2}
-              onClick={() => setStep(3)}
-              className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-40"
-              style={{ background: '#f97316' }}
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Step 3: Team ── */}
-      {step === 3 && (
         <div className="space-y-5">
           <div>
             <h2 className="text-xl font-bold" style={{ color: '#e2e2f0' }}>
@@ -274,11 +172,11 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
             <p className="mt-1 text-sm" style={{ color: '#9ca3af' }}>
               {role === 'coach'
                 ? 'Create a new team or join an existing one.'
-                : 'Find your school’s team to get started.'}
+                : 'Find your school\'s team to get started.'}
             </p>
           </div>
 
-          {/* Toggle: coaches can create or join; runners can only join */}
+          {/* Create / Join toggle — coaches only */}
           {role === 'coach' && (
             <div
               className="flex rounded-lg p-1 gap-1"
@@ -301,7 +199,7 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
             </div>
           )}
 
-          {/* Create form — coaches only */}
+          {/* Create form — coaches creating a new team */}
           {createTeam && role === 'coach' && (
             <div className="space-y-4">
               <div>
@@ -335,7 +233,7 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
             </div>
           )}
 
-          {/* Join list — runners always, coaches when they pick "Join existing" */}
+          {/* Join list — runners always; coaches when "Join existing" selected */}
           {(!createTeam || role === 'runner') && (
             <div className="space-y-3">
               <input
@@ -388,15 +286,17 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
           {error && <p className="text-sm" style={{ color: '#ef4444' }}>{error}</p>}
 
           <div className="flex gap-3 pt-2">
+            {!lockedRole && (
+              <button
+                onClick={() => setStep(1)}
+                className="flex-1 rounded-xl py-2.5 text-sm font-semibold"
+                style={{ background: '#1e1e2e', border: '1px solid #2a2a3a', color: '#9ca3af' }}
+              >
+                Back
+              </button>
+            )}
             <button
-              onClick={() => setStep(2)}
-              className="flex-1 rounded-xl py-2.5 text-sm font-semibold"
-              style={{ background: '#1e1e2e', border: '1px solid #2a2a3a', color: '#9ca3af' }}
-            >
-              Back
-            </button>
-            <button
-              disabled={!canAdvanceStep3 || submitting}
+              disabled={!canSubmit || submitting}
               onClick={handleSubmit}
               className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-40"
               style={{ background: '#f97316' }}

@@ -18,10 +18,7 @@ function LoginContent() {
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [signupRole, setSignupRole] = useState<'coach' | 'runner'>('coach')
   const [error, setError] = useState<string | null>(stravaError ? 'Strava sign-in failed. Please try again.' : null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const supabase = createClient()
@@ -29,42 +26,24 @@ function LoginContent() {
   const switchMode = (next: Mode) => {
     setMode(next)
     setError(null)
-    setSuccessMessage(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    setSuccessMessage(null)
 
-    if (mode === 'signup') {
-      if (password !== confirmPassword) {
-        setError('Passwords do not match.')
-        return
-      }
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters.')
-        return
-      }
+    if (mode === 'signup' && password.length < 6) {
+      setError('Password must be at least 6 characters.')
+      return
     }
 
     setLoading(true)
     try {
       if (mode === 'signup') {
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password })
+        const { error: signUpError } = await supabase.auth.signUp({ email, password })
         if (signUpError) throw signUpError
-        localStorage.setItem('pendingRole', signupRole)
-        if (signUpData.session) {
-          // Email confirmation disabled — user is immediately logged in
-          router.push('/onboarding')
-          router.refresh()
-        } else {
-          // Email confirmation required — ask them to check their inbox
-          setSuccessMessage('Check your email to confirm your account, then sign in.')
-          setEmail('')
-          setPassword('')
-          setConfirmPassword('')
-        }
+        router.push('/onboarding')
+        router.refresh()
       } else {
         const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
         if (signInError) throw signInError
@@ -156,11 +135,7 @@ function LoginContent() {
               type="button"
               onClick={() => switchMode('signin')}
               className="flex-1 rounded-md py-1.5 text-sm font-medium transition-colors"
-              style={
-                mode === 'signin'
-                  ? { background: '#f97316', color: '#fff' }
-                  : { color: '#6b6b80' }
-              }
+              style={mode === 'signin' ? { background: '#f97316', color: '#fff' } : { color: '#6b6b80' }}
             >
               Sign In
             </button>
@@ -168,11 +143,7 @@ function LoginContent() {
               type="button"
               onClick={() => switchMode('signup')}
               className="flex-1 rounded-md py-1.5 text-sm font-medium transition-colors"
-              style={
-                mode === 'signup'
-                  ? { background: '#f97316', color: '#fff' }
-                  : { color: '#6b6b80' }
-              }
+              style={mode === 'signup' ? { background: '#f97316', color: '#fff' } : { color: '#6b6b80' }}
             >
               Sign Up
             </button>
@@ -207,63 +178,7 @@ function LoginContent() {
               />
             </div>
 
-            {mode === 'signup' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#6b6b80' }}>
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    style={inputStyle}
-                    onFocus={e => (e.target.style.borderColor = '#f97316')}
-                    onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
-                  />
-                </div>
-
-                {/* Role selector */}
-                <div>
-                  <label className="block text-sm font-semibold mb-2" style={{ color: '#9ca3af' }}>
-                    I am a…
-                  </label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setSignupRole('coach')}
-                      style={{
-                        flex: 1, padding: '12px', borderRadius: '12px', border: '1.5px solid',
-                        borderColor: signupRole === 'coach' ? '#f97316' : '#2a2a3a',
-                        background: signupRole === 'coach' ? '#2d1200' : '#1e1e2e',
-                        color: signupRole === 'coach' ? '#f97316' : '#9ca3af',
-                        fontWeight: 500, cursor: 'pointer', fontSize: '14px',
-                      }}
-                    >
-                      🧑‍💼 Coach
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSignupRole('runner')}
-                      style={{
-                        flex: 1, padding: '12px', borderRadius: '12px', border: '1.5px solid',
-                        borderColor: signupRole === 'runner' ? '#f97316' : '#2a2a3a',
-                        background: signupRole === 'runner' ? '#2d1200' : '#1e1e2e',
-                        color: signupRole === 'runner' ? '#f97316' : '#9ca3af',
-                        fontWeight: 500, cursor: 'pointer', fontSize: '14px',
-                      }}
-                    >
-                      🏃 Runner
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-
             {error && !stravaError && <p className="text-sm text-red-400">{error}</p>}
-            {successMessage && <p className="text-sm" style={{ color: '#4ade80' }}>{successMessage}</p>}
 
             <button
               type="submit"
@@ -273,7 +188,7 @@ function LoginContent() {
             >
               {loading
                 ? mode === 'signin' ? 'Signing in…' : 'Creating account…'
-                : mode === 'signin' ? 'Sign In' : 'Create Account'}
+                : mode === 'signin' ? 'Sign In' : 'Sign Up'}
             </button>
           </form>
         </div>

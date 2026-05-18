@@ -39,7 +39,7 @@ export default async function OnboardingPage() {
       <div className="mb-10 text-center">
         <h1 className="text-3xl font-bold" style={{ color: '#f97316' }}>Welcome to StrideSafe</h1>
         <p className="mt-2 text-sm" style={{ color: '#9ca3af' }}>
-          Let&apos;s get your account set up in three quick steps.
+          Let&apos;s get your account set up in two quick steps.
         </p>
       </div>
       <div

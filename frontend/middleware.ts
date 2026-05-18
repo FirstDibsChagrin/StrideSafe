@@ -30,7 +30,6 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const isPublic =
-    pathname === '/' ||
     pathname === '/login' ||
     pathname.startsWith('/onboarding') ||
     pathname.startsWith('/api/')
@@ -40,34 +39,38 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Redirect authenticated users away from / and /login to the right dashboard
-  if (user && (pathname === '/' || pathname === '/login')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role,team_id')
-      .eq('id', user.id)
-      .maybeSingle()
+  if (user) {
+    // On / or /login: redirect to the right place
+    if (pathname === '/' || pathname === '/login') {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role,team_id')
+        .eq('id', user.id)
+        .maybeSingle()
 
-    if (profile?.role === 'coach') {
-      return NextResponse.redirect(new URL('/coach', request.url))
-    } else if (profile?.role === 'runner') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-    if (pathname === '/login') {
+      if (profile?.role === 'coach') {
+        return NextResponse.redirect(new URL('/coach', request.url))
+      } else if (profile?.role === 'runner') {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+      // No role yet — send to onboarding
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
-  }
 
-  // For authenticated users on protected pages, ensure onboarding is complete
-  if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/coach'))) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role,team_id')
-      .eq('id', user.id)
-      .maybeSingle()
+    // On any protected page: if no role, send to onboarding
+    if (!isPublic) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role,team_id')
+        .eq('id', user.id)
+        .maybeSingle()
 
-    if (!profile || !profile.role || !profile.team_id) {
-      return NextResponse.redirect(new URL('/onboarding', request.url))
+      if (!profile?.role) {
+        return NextResponse.redirect(new URL('/onboarding', request.url))
+      }
+      if (!profile?.team_id) {
+        return NextResponse.redirect(new URL('/onboarding', request.url))
+      }
     }
   }
 
