@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AccountMenu from '@/components/AccountMenu'
 import RunnerList from './RunnerList'
+import CreateTeamForm from './CreateTeamForm'
 
 interface Profile {
   id: string
@@ -37,12 +38,24 @@ export default async function CoachPage() {
 
   if (!teamId) {
     return (
-      <main className="min-h-screen bg-gray-50 p-6">
+      <main className="min-h-screen p-6" style={{ background: '#0d0d14' }}>
         <div className="mx-auto max-w-4xl">
-          <h1 className="text-2xl font-bold text-gray-900">Coach Dashboard</h1>
-          <p className="mt-4 text-sm text-gray-500">
-            You are not assigned to a team yet. Contact your administrator.
-          </p>
+          <div className="flex items-center justify-between mb-8">
+            <span className="text-xl font-bold tracking-tight" style={{ color: '#f97316' }}>
+              StrideSafe
+            </span>
+            <AccountMenu email={user.email ?? ''} />
+          </div>
+          <div
+            className="rounded-2xl p-8 max-w-md"
+            style={{ background: '#13131f', border: '1px solid #2a2a3a' }}
+          >
+            <h1 className="text-xl font-bold" style={{ color: '#e2e2f0' }}>Create your team</h1>
+            <p className="mt-1 text-sm" style={{ color: '#9ca3af' }}>
+              You don&apos;t have a team yet. Create one so your runners can join.
+            </p>
+            <CreateTeamForm />
+          </div>
         </div>
       </main>
     )

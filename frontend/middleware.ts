@@ -48,10 +48,10 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .maybeSingle()
 
-    if (profile?.role && profile?.team_id) {
-      return NextResponse.redirect(
-        new URL(profile.role === 'coach' ? '/coach' : '/dashboard', request.url),
-      )
+    if (profile?.role === 'coach') {
+      return NextResponse.redirect(new URL('/coach', request.url))
+    } else if (profile?.role === 'runner') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     if (pathname === '/login') {
       return NextResponse.redirect(new URL('/onboarding', request.url))

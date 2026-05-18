@@ -18,6 +18,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  console.log('[onboarding] received body:', body)
+
   const {
     role,
     full_name,
@@ -36,16 +38,20 @@ export async function POST(req: NextRequest) {
   let resolvedTeamId: string | null = team_id ?? null
 
   if (create_team) {
-    if (!team_name || !team_school) {
+    if (!team_name) {
       return NextResponse.json(
-        { error: 'team_name and team_school are required when creating a team' },
+        { error: 'team_name is required when creating a team' },
         { status: 400 },
       )
     }
 
     const { data: newTeam, error: teamError } = await supabase
       .from('teams')
-      .insert({ name: team_name, school: team_school })
+      .insert({
+        name: team_name,
+        school: team_school || null,
+        ...(role === 'coach' ? { coach_id: user.id } : {}),
+      })
       .select('id')
       .single()
 
