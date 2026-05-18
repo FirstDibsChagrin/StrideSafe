@@ -44,6 +44,7 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
   const [gender, setGender] = useState('')
   const [teamSearch, setTeamSearch] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
+  const [createTeam, setCreateTeam] = useState(true)
   const [newTeamName, setNewTeamName] = useState('')
   const [newTeamSchool, setNewTeamSchool] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -57,14 +58,14 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
 
   const canAdvanceStep2 = fullName.trim().length > 0
 
-  const canAdvanceStep3 =
-    role === 'coach' ? newTeamName.trim().length > 0 : selectedTeamId !== null
+  const canAdvanceStep3 = createTeam
+    ? newTeamName.trim().length > 0
+    : selectedTeamId !== null
 
   const handleSubmit = async () => {
     setSubmitting(true)
     setError(null)
     try {
-      const isCoach = role === 'coach'
       const res = await fetch('/api/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,8 +75,8 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
           full_name: fullName.trim(),
           age: age !== '' ? age : null,
           gender: gender.trim() || null,
-          team_id: isCoach ? null : selectedTeamId,
-          create_team: isCoach,
+          team_id: createTeam ? null : selectedTeamId,
+          create_team: createTeam,
           team_name: newTeamName.trim(),
           team_school: newTeamSchool.trim(),
         }),
@@ -266,98 +267,122 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
       {/* ── Step 3: Team ── */}
       {step === 3 && (
         <div className="space-y-5">
-          {role === 'coach' ? (
-            <>
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: '#e2e2f0' }}>
+              {role === 'coach' ? 'Set up your team' : 'Join a team'}
+            </h2>
+            <p className="mt-1 text-sm" style={{ color: '#9ca3af' }}>
+              {role === 'coach'
+                ? 'Create a new team or join an existing one.'
+                : 'Find your school’s team to get started.'}
+            </p>
+          </div>
+
+          {/* Toggle: coaches can create or join; runners can only join */}
+          {role === 'coach' && (
+            <div
+              className="flex rounded-lg p-1 gap-1"
+              style={{ background: '#1e1e2e', border: '1px solid #2a2a3a' }}
+            >
+              <button
+                onClick={() => setCreateTeam(true)}
+                className="flex-1 rounded-md py-1.5 text-sm font-medium transition-colors"
+                style={createTeam ? { background: '#f97316', color: '#fff' } : { color: '#6b6b80' }}
+              >
+                Create new
+              </button>
+              <button
+                onClick={() => setCreateTeam(false)}
+                className="flex-1 rounded-md py-1.5 text-sm font-medium transition-colors"
+                style={!createTeam ? { background: '#f97316', color: '#fff' } : { color: '#6b6b80' }}
+              >
+                Join existing
+              </button>
+            </div>
+          )}
+
+          {/* Create form — coaches only */}
+          {createTeam && role === 'coach' && (
+            <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold" style={{ color: '#e2e2f0' }}>Create your team</h2>
-                <p className="mt-1 text-sm" style={{ color: '#9ca3af' }}>
-                  Set up a team so your runners can join.
-                </p>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#9ca3af' }}>
-                    Team name <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={newTeamName}
-                    onChange={(e) => setNewTeamName(e.target.value)}
-                    placeholder="Varsity Cross Country"
-                    style={inp}
-                    onFocus={e => (e.target.style.borderColor = '#f97316')}
-                    onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#9ca3af' }}>
-                    School name <span style={{ color: '#6b6b80' }} className="font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={newTeamSchool}
-                    onChange={(e) => setNewTeamSchool(e.target.value)}
-                    placeholder="Lincoln High School"
-                    style={inp}
-                    onFocus={e => (e.target.style.borderColor = '#f97316')}
-                    onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
-                  />
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <h2 className="text-xl font-bold" style={{ color: '#e2e2f0' }}>Join a team</h2>
-                <p className="mt-1 text-sm" style={{ color: '#9ca3af' }}>
-                  Find your school&apos;s team to get started.
-                </p>
-              </div>
-              <div className="space-y-3">
+                <label className="block text-sm font-medium mb-1" style={{ color: '#9ca3af' }}>
+                  Team name <span style={{ color: '#ef4444' }}>*</span>
+                </label>
                 <input
                   type="text"
-                  value={teamSearch}
-                  onChange={(e) => setTeamSearch(e.target.value)}
-                  placeholder="Search by school or team name…"
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  placeholder="Varsity Cross Country"
                   style={inp}
                   onFocus={e => (e.target.style.borderColor = '#f97316')}
                   onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
                 />
-                <div
-                  className="max-h-56 overflow-y-auto rounded-xl divide-y"
-                  style={{ border: '1px solid #2a2a3a' }}
-                >
-                  {filteredTeams.length === 0 ? (
-                    <p className="px-3 py-4 text-sm text-center" style={{ color: '#6b6b80' }}>
-                      No teams found. Ask your coach to create one.
-                    </p>
-                  ) : (
-                    filteredTeams.map((team) => (
-                      <button
-                        key={team.id}
-                        onClick={() => setSelectedTeamId(team.id)}
-                        className="flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors"
-                        style={{
-                          background: selectedTeamId === team.id ? 'rgba(249,115,22,0.1)' : '#13131f',
-                        }}
-                      >
-                        <div>
-                          <p className="text-sm font-medium" style={{ color: '#e2e2f0' }}>
-                            {team.name}
-                          </p>
-                          {team.school && (
-                            <p className="text-xs" style={{ color: '#6b6b80' }}>{team.school}</p>
-                          )}
-                        </div>
-                        {selectedTeamId === team.id && (
-                          <span style={{ color: '#f97316' }}>✓</span>
-                        )}
-                      </button>
-                    ))
-                  )}
-                </div>
               </div>
-            </>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#9ca3af' }}>
+                  School name <span style={{ color: '#6b6b80' }} className="font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={newTeamSchool}
+                  onChange={(e) => setNewTeamSchool(e.target.value)}
+                  placeholder="Lincoln High School"
+                  style={inp}
+                  onFocus={e => (e.target.style.borderColor = '#f97316')}
+                  onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Join list — runners always, coaches when they pick "Join existing" */}
+          {(!createTeam || role === 'runner') && (
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={teamSearch}
+                onChange={(e) => setTeamSearch(e.target.value)}
+                placeholder="Search by school or team name…"
+                style={inp}
+                onFocus={e => (e.target.style.borderColor = '#f97316')}
+                onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
+              />
+              <div
+                className="max-h-56 overflow-y-auto rounded-xl divide-y"
+                style={{ border: '1px solid #2a2a3a' }}
+              >
+                {filteredTeams.length === 0 ? (
+                  <p className="px-3 py-4 text-sm text-center" style={{ color: '#6b6b80' }}>
+                    {role === 'coach'
+                      ? 'No teams found. Switch to "Create new" to start one.'
+                      : 'No teams found. Ask your coach to create one.'}
+                  </p>
+                ) : (
+                  filteredTeams.map((team) => (
+                    <button
+                      key={team.id}
+                      onClick={() => setSelectedTeamId(team.id)}
+                      className="flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors"
+                      style={{
+                        background: selectedTeamId === team.id ? 'rgba(249,115,22,0.1)' : '#13131f',
+                      }}
+                    >
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: '#e2e2f0' }}>
+                          {team.name}
+                        </p>
+                        {team.school && (
+                          <p className="text-xs" style={{ color: '#6b6b80' }}>{team.school}</p>
+                        )}
+                      </div>
+                      {selectedTeamId === team.id && (
+                        <span style={{ color: '#f97316' }}>✓</span>
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
           )}
 
           {error && <p className="text-sm" style={{ color: '#ef4444' }}>{error}</p>}
@@ -376,7 +401,7 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
               className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-40"
               style={{ background: '#f97316' }}
             >
-              {submitting ? 'Setting up…' : role === 'coach' ? 'Create Team' : 'Join Team'}
+              {submitting ? 'Setting up…' : createTeam ? 'Create Team' : 'Join Team'}
             </button>
           </div>
         </div>
