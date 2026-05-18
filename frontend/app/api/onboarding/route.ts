@@ -18,18 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  console.log('[onboarding] received body:', body)
-
-  const {
-    role,
-    full_name,
-    age,
-    gender,
-    team_id,
-    create_team,
-    team_name,
-    team_school,
-  } = body
+  const { role, full_name, team_id, create_team, team_name, team_school } = body
 
   if (!role) {
     return NextResponse.json({ error: 'role is required' }, { status: 400 })
@@ -68,8 +57,6 @@ export async function POST(req: NextRequest) {
       email: user.email,
       role,
       ...(full_name ? { full_name } : {}),
-      ...(age != null ? { age } : {}),
-      ...(gender ? { gender } : {}),
       team_id: resolvedTeamId,
     },
     { onConflict: 'id' },

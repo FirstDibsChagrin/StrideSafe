@@ -9,89 +9,64 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookies) => {
+          cookies.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          )
+          cookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
         },
       },
     },
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  const isPublic =
-    pathname === '/' ||
-    pathname === '/login' ||
-    pathname === '/signup' ||
-    pathname.startsWith('/onboarding') ||
-    pathname.startsWith('/api/')
+  const isAuthPage = pathname === '/' || pathname === '/login' || pathname === '/signup'
+  const isOnboarding = pathname.startsWith('/onboarding')
+  const isApi = pathname.startsWith('/api/')
 
-  // Redirect unauthenticated users to /login
-  if (!user && !isPublic) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // Unauthenticated: only allow public pages
+  if (!user) {
+    if (!isAuthPage && !isOnboarding && !isApi) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    return response
   }
 
-  if (user) {
-    // On landing/auth pages: redirect already-logged-in users to their dashboard
-    if (pathname === '/' || pathname === '/login' || pathname === '/signup') {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role,team_id')
-        .eq('id', user.id)
-        .maybeSingle()
+  // Authenticated: fetch profile once
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, team_id')
+    .eq('id', user.id)
+    .maybeSingle()
 
-      if (profile?.role === 'coach') {
-        return NextResponse.redirect(new URL('/coach', request.url))
-      } else if (profile?.role === 'runner') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-      }
-      // No role yet — send to onboarding
-      return NextResponse.redirect(new URL('/onboarding', request.url))
-    }
+  const dest = !profile?.role || !profile?.team_id
+    ? '/onboarding'
+    : profile.role === 'coach' ? '/coach' : '/dashboard'
 
-    // On any protected page: enforce role and onboarding completion
-    if (!isPublic) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role,team_id')
-        .eq('id', user.id)
-        .maybeSingle()
+  // On auth pages: send to correct destination
+  if (isAuthPage) {
+    return NextResponse.redirect(new URL(dest, request.url))
+  }
 
-      if (!profile?.role) {
-        return NextResponse.redirect(new URL('/onboarding', request.url))
-      }
-      if (!profile?.team_id) {
-        return NextResponse.redirect(new URL('/onboarding', request.url))
-      }
+  // Let onboarding and API through
+  if (isOnboarding || isApi) return response
 
-      // Enforce role-based dashboard access
-      if (profile.role === 'coach' && pathname.startsWith('/dashboard')) {
-        return NextResponse.redirect(new URL('/coach', request.url))
-      }
-      if (profile.role === 'runner' && pathname.startsWith('/coach')) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-      }
-    }
+  // On protected pages: enforce onboarding and role access
+  if (!profile?.role || !profile?.team_id) {
+    return NextResponse.redirect(new URL('/onboarding', request.url))
+  }
+  if (profile.role === 'coach' && pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/coach', request.url))
+  }
+  if (profile.role === 'runner' && pathname.startsWith('/coach')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return response
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all paths except Next.js internals and static assets.
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }

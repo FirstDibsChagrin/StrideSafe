@@ -6,14 +6,12 @@ export default function LandingPage() {
       className="flex min-h-screen flex-col items-center justify-center px-4"
       style={{ background: '#0d0d14' }}
     >
-      <div className="text-center mb-12">
-        <h1 className="text-5xl font-bold tracking-tight" style={{ color: '#f97316' }}>
-          StrideSafe
-        </h1>
-        <p className="mt-3 text-lg" style={{ color: '#6b6b80' }}>
-          Injury prediction for high school cross-country teams
-        </p>
-      </div>
+      <h1 className="text-5xl font-bold tracking-tight mb-3" style={{ color: '#f97316' }}>
+        StrideSafe
+      </h1>
+      <p className="text-base mb-12" style={{ color: '#6b6b80' }}>
+        Injury prediction for high school cross-country
+      </p>
 
       <div className="flex gap-4">
         <Link
