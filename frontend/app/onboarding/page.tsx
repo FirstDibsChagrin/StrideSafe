@@ -14,22 +14,23 @@ export default async function OnboardingPage() {
     redirect('/login')
   }
 
-  // If already onboarded, redirect to the correct dashboard based on role
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role,team_id')
+    .select('role,team_id,full_name')
     .eq('id', user.id)
     .maybeSingle()
 
+  // Already fully onboarded — send to dashboard
   if (profile?.team_id) {
     redirect(profile.role === 'coach' ? '/coach' : '/dashboard')
   }
 
-  // Fetch all teams for the team-selection step
   const { data: teams } = await supabase
     .from('teams')
     .select('id,name,school')
     .order('name', { ascending: true })
+
+  const lockedRole = (profile?.role as 'runner' | 'coach' | null) ?? null
 
   return (
     <main
@@ -39,14 +40,14 @@ export default async function OnboardingPage() {
       <div className="mb-10 text-center">
         <h1 className="text-3xl font-bold" style={{ color: '#f97316' }}>Welcome to StrideSafe</h1>
         <p className="mt-2 text-sm" style={{ color: '#9ca3af' }}>
-          Let&apos;s get your account set up in two quick steps.
+          Let&apos;s get your account set up.
         </p>
       </div>
       <div
         className="w-full max-w-lg rounded-2xl p-8"
         style={{ background: '#13131f', border: '1px solid #2a2a3a' }}
       >
-        <OnboardingFlow userId={user.id} teams={teams ?? []} lockedRole={profile?.role as 'runner' | 'coach' | null ?? null} />
+        <OnboardingFlow userId={user.id} teams={teams ?? []} lockedRole={lockedRole} />
       </div>
     </main>
   )

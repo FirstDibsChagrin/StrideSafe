@@ -30,7 +30,9 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const isPublic =
+    pathname === '/' ||
     pathname === '/login' ||
+    pathname === '/signup' ||
     pathname.startsWith('/onboarding') ||
     pathname.startsWith('/api/')
 
@@ -40,8 +42,8 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user) {
-    // On / or /login: redirect to the right place
-    if (pathname === '/' || pathname === '/login') {
+    // On landing/auth pages: redirect already-logged-in users to their dashboard
+    if (pathname === '/' || pathname === '/login' || pathname === '/signup') {
       const { data: profile } = await supabase
         .from('profiles')
         .select('role,team_id')
