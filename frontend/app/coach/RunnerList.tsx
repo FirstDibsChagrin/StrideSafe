@@ -59,8 +59,9 @@ function riskBadgeStyle(score: number): React.CSSProperties {
 
 function formatPace(secPerKm: number | null) {
   if (!secPerKm) return '—'
-  const min = Math.floor(secPerKm / 60)
-  const sec = Math.round(secPerKm % 60)
+  const secPerMile = secPerKm * 1.60934
+  const min = Math.floor(secPerMile / 60)
+  const sec = Math.round(secPerMile % 60)
   return `${min}:${sec.toString().padStart(2, '0')}`
 }
 
@@ -151,9 +152,11 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
         </div>
 
         <div className="flex-shrink-0 w-20 text-right">
-          <p className="text-xs" style={{ color: '#6b6b80' }}>Wk km</p>
+          <p className="text-xs" style={{ color: '#6b6b80' }}>Wk mi</p>
           <p className="text-sm font-medium" style={{ color: '#e2e2f0' }}>
-            {runner.latestMetrics?.weekly_mileage_km?.toFixed(1) ?? '—'}
+            {runner.latestMetrics?.weekly_mileage_km != null
+              ? (runner.latestMetrics.weekly_mileage_km * 0.621371).toFixed(1)
+              : '—'}
           </p>
         </div>
 
@@ -185,9 +188,9 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
                     <tr key={run.strava_activity_id} style={{ color: '#e2e2f0', borderBottom: '1px solid #1e1e2e' }}>
                       <td className="py-1.5 pr-3">{run.activity_date?.slice(0, 10) ?? '—'}</td>
                       <td className="py-1.5 pr-3">
-                        {run.distance_meters != null ? (run.distance_meters / 1000).toFixed(2) + ' km' : '—'}
+                        {run.distance_meters != null ? (run.distance_meters / 1609.34).toFixed(2) + ' mi' : '—'}
                       </td>
-                      <td className="py-1.5 pr-3">{formatPace(run.avg_pace_sec_per_km)}/km</td>
+                      <td className="py-1.5 pr-3">{formatPace(run.avg_pace_sec_per_km)}/mi</td>
                       <td className="py-1.5">{run.workout_type ?? '—'}</td>
                     </tr>
                   ))}

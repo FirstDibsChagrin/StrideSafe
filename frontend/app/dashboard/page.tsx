@@ -42,14 +42,15 @@ interface Injury {
 
 function formatPace(secPerKm: number | null): string {
   if (!secPerKm) return '—'
-  const min = Math.floor(secPerKm / 60)
-  const sec = Math.round(secPerKm % 60)
+  const secPerMile = secPerKm * 1.60934
+  const min = Math.floor(secPerMile / 60)
+  const sec = Math.round(secPerMile % 60)
   return `${min}:${sec.toString().padStart(2, '0')}`
 }
 
 function formatDistance(meters: number | null): string {
   if (meters == null) return '—'
-  return (meters / 1000).toFixed(2) + ' km'
+  return (meters / 1609.34).toFixed(2) + ' mi'
 }
 
 function riskRingColor(score: number) {
@@ -185,6 +186,7 @@ export default async function DashboardPage() {
   const latestMetric = metrics[0] ?? null
   const currentAcwr = latestMetric?.acwr ?? 1.0
   const currentWeeklyKm = latestMetric?.weekly_mileage_km ?? 0
+  const currentWeeklyMi = currentWeeklyKm * 0.621371
   const score = riskScore?.global_score ?? 0
 
   return (
@@ -260,10 +262,10 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-3 gap-4">
           {[
             {
-              label: 'Weekly km',
-              value: currentWeeklyKm > 0 ? currentWeeklyKm.toFixed(1) : '—',
-              sub: currentWeeklyKm > 80 ? '⚠ High volume' : currentWeeklyKm > 0 ? '✓ On track' : 'No data',
-              subColor: currentWeeklyKm > 80 ? '#ef4444' : '#4ade80',
+              label: 'Weekly mi',
+              value: currentWeeklyMi > 0 ? currentWeeklyMi.toFixed(1) : '—',
+              sub: currentWeeklyMi > 50 ? '⚠ High volume' : currentWeeklyMi > 0 ? '✓ On track' : 'No data',
+              subColor: currentWeeklyMi > 50 ? '#ef4444' : '#4ade80',
             },
             {
               label: 'ACWR',
@@ -333,7 +335,7 @@ export default async function DashboardPage() {
                         {a.workout_type ?? 'Run'} · {a.activity_date?.slice(0, 10) ?? '—'}
                       </p>
                       <p className="text-xs" style={{ color: '#6b6b80' }}>
-                        {formatDistance(a.distance_meters)} · {formatPace(a.avg_pace_sec_per_km)}/km
+                        {formatDistance(a.distance_meters)} · {formatPace(a.avg_pace_sec_per_km)}/mi
                       </p>
                     </div>
                     {todayCheckin && a.activity_date?.slice(0, 10) === today && (

@@ -197,7 +197,7 @@ export default async function CoachPage() {
             <div className="flex-1">Runner</div>
             <div className="flex-shrink-0 w-16 text-center">Risk</div>
             <div className="flex-shrink-0 w-16 text-right">ACWR</div>
-            <div className="flex-shrink-0 w-20 text-right">Wk km</div>
+            <div className="flex-shrink-0 w-20 text-right">Wk mi</div>
             <div className="flex-shrink-0 w-4"></div>
           </div>
           <RunnerList runners={runnersData} coachId={user!.id} />
