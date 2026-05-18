@@ -25,12 +25,13 @@ export default async function OnboardingPage() {
     redirect(profile.role === 'coach' ? '/coach' : '/dashboard')
   }
 
-  const { data: teams } = await supabase
-    .from('teams')
-    .select('id,name,school')
-    .order('name', { ascending: true })
+  const [{ data: teams }, { data: stravaConn }] = await Promise.all([
+    supabase.from('teams').select('id,name,school').order('name', { ascending: true }),
+    supabase.from('strava_connections').select('user_id').eq('user_id', user!.id).maybeSingle(),
+  ])
 
-  const lockedRole = (profile?.role as 'runner' | 'coach' | null) ?? null
+  // Only lock the role for Strava users — email signups must pick their own role
+  const lockedRole: 'runner' | null = stravaConn ? 'runner' : null
 
   return (
     <main
