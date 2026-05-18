@@ -45,14 +45,9 @@ function LoginContent() {
         router.push('/onboarding')
         router.refresh()
       } else {
-        const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
         if (signInError) throw signInError
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user!.id)
-          .maybeSingle()
-        router.push(profile?.role === 'coach' ? '/coach' : '/dashboard')
+        router.push('/')
         router.refresh()
       }
     } catch (err) {

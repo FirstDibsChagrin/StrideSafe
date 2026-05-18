@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
 
-    // On any protected page: if no role, send to onboarding
+    // On any protected page: enforce role and onboarding completion
     if (!isPublic) {
       const { data: profile } = await supabase
         .from('profiles')
@@ -70,6 +70,14 @@ export async function middleware(request: NextRequest) {
       }
       if (!profile?.team_id) {
         return NextResponse.redirect(new URL('/onboarding', request.url))
+      }
+
+      // Enforce role-based dashboard access
+      if (profile.role === 'coach' && pathname.startsWith('/dashboard')) {
+        return NextResponse.redirect(new URL('/coach', request.url))
+      }
+      if (profile.role === 'runner' && pathname.startsWith('/coach')) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
       }
     }
   }
