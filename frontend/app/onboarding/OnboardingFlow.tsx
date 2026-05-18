@@ -82,7 +82,7 @@ export default function OnboardingFlow({ userId, teams, lockedRole }: Onboarding
   const pickRole = (r: Role) => {
     setRole(r)
     // Reset team state when role changes
-    setCreateTeam(true)
+    setCreateTeam(r === 'coach')
     setSelectedTeamId(null)
     setNewTeamName('')
     setNewTeamSchool('')
