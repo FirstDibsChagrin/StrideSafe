@@ -5,42 +5,35 @@ import CheckInModal from '@/components/CheckInModal'
 
 export default function CheckInCard() {
   const [checkInType, setCheckInType] = useState<'pre' | 'post' | null>(null)
-  const [lastCheckin, setLastCheckin] = useState<{ type: string; time: string } | null>(null)
+  const [lastCheckin, setLastCheckin] = useState<{ type: string } | null>(null)
 
   return (
     <>
-      <div
-        className="rounded-2xl p-5"
-        style={{ background: '#13131f', border: '1px solid #2a2a3a' }}
-      >
-        <h3 className="font-bold mb-3" style={{ color: '#e2e2f0' }}>Run Check-In</h3>
+      <div className="rounded-2xl p-5" style={{ background: '#13131f', border: '1px solid #1e1e2e' }}>
+        <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#6b6b80' }}>
+          Daily Check-In
+        </p>
         <div className="flex gap-3">
           <button
             onClick={() => setCheckInType('pre')}
-            className="flex-1 font-semibold py-3 rounded-xl transition-colors text-sm"
-            style={{
-              background: '#1a1230',
-              border: '1px solid rgba(109,40,217,0.3)',
-              color: '#a78bfa',
-            }}
+            className="flex-1 flex flex-col items-center gap-1 py-4 rounded-xl font-semibold text-sm transition-opacity hover:opacity-90"
+            style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)', color: '#a78bfa' }}
           >
-            🏃 Pre-Run
+            <span className="text-2xl">🏃</span>
+            <span>Pre-Run</span>
           </button>
           <button
             onClick={() => setCheckInType('post')}
-            className="flex-1 font-semibold py-3 rounded-xl transition-colors text-sm"
-            style={{
-              background: '#0d1f12',
-              border: '1px solid rgba(22,163,74,0.3)',
-              color: '#4ade80',
-            }}
+            className="flex-1 flex flex-col items-center gap-1 py-4 rounded-xl font-semibold text-sm transition-opacity hover:opacity-90"
+            style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', color: '#4ade80' }}
           >
-            ✅ Post-Run
+            <span className="text-2xl">✓</span>
+            <span>Post-Run</span>
           </button>
         </div>
         {lastCheckin && (
-          <p className="text-xs mt-2 text-center" style={{ color: '#6b6b80' }}>
-            Last: {lastCheckin.type}-run check-in saved {lastCheckin.time}
+          <p className="text-xs mt-3 text-center" style={{ color: '#4ade80' }}>
+            ✓ {lastCheckin.type}-run check-in saved
           </p>
         )}
       </div>
@@ -49,7 +42,7 @@ export default function CheckInCard() {
         <CheckInModal
           type={checkInType}
           onClose={() => setCheckInType(null)}
-          onSaved={() => setLastCheckin({ type: checkInType, time: 'just now' })}
+          onSaved={() => setLastCheckin({ type: checkInType })}
         />
       )}
     </>

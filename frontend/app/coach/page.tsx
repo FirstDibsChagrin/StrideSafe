@@ -109,7 +109,7 @@ export default async function CoachPage() {
       supabase
         .from('daily_checkins')
         .select(
-          'user_id,checkin_date,pain_level,fatigue_level,stress_level,sleep_hours,soreness_notes',
+          'user_id,checkin_date,pain_level,fatigue_level,stress_level,sleep_hours,soreness_notes,grip_left_lbs,grip_right_lbs',
         )
         .in('user_id', runnerIds)
         .order('checkin_date', { ascending: false }),
@@ -163,9 +163,11 @@ export default async function CoachPage() {
       <div className="mx-auto max-w-4xl space-y-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <span className="text-xl font-bold tracking-tight" style={{ color: '#f97316' }}>StrideSafe</span>
-            <p className="text-sm mt-0.5" style={{ color: '#6b6b80' }}>
-              {runnersData.length} runner{runnersData.length !== 1 ? 's' : ''} on your team
+            <span className="text-lg font-black tracking-tight" style={{ color: '#e2e2f0' }}>
+              Stride<span style={{ color: '#f97316' }}>Safe</span>
+            </span>
+            <p className="text-xs font-bold uppercase tracking-widest mt-1" style={{ color: '#6b6b80' }}>
+              {runnersData.length} runner{runnersData.length !== 1 ? 's' : ''} · Coach Dashboard
             </p>
           </div>
           <AccountMenu email={user!.email ?? ''} />
