@@ -6,6 +6,7 @@ node_modules/
 # Next.js build output
 frontend/.next/
 frontend/out/
+frontend/tsconfig.tsbuildinfo
 
 # Environment variables
 frontend/.env.local
