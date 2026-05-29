@@ -56,8 +56,7 @@ export default function CheckInModal({ type, onClose, onSaved }: Props) {
   const [stress, setStress] = useState(0)
   const [locations, setLocations] = useState<string[]>([])
   const [notes, setNotes] = useState('')
-  const [gripLeft, setGripLeft] = useState('')
-  const [gripRight, setGripRight] = useState('')
+  const [grip, setGrip] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -65,11 +64,7 @@ export default function CheckInModal({ type, onClose, onSaved }: Props) {
     setLocations(prev => prev.includes(loc) ? prev.filter(l => l !== loc) : [...prev, loc])
   }
 
-  const gripLeftNum = gripLeft !== '' ? Number(gripLeft) : null
-  const gripRightNum = gripRight !== '' ? Number(gripRight) : null
-  const gripAsymmetry = gripLeftNum && gripRightNum && Math.max(gripLeftNum, gripRightNum) > 0
-    ? Math.abs(gripLeftNum - gripRightNum) / Math.max(gripLeftNum, gripRightNum) * 100
-    : null
+  const gripNum = grip !== '' ? Number(grip) : null
 
   async function handleSave() {
     setSaving(true); setError(null)
@@ -86,8 +81,7 @@ export default function CheckInModal({ type, onClose, onSaved }: Props) {
           pain_level: pain,
           fatigue_level: fatigue,
           stress_level: stress,
-          grip_left_lbs: gripLeftNum,
-          grip_right_lbs: gripRightNum,
+          grip_strength_lbs: gripNum,
           notes: [
             notes.trim(),
             locations.length ? `Locations: ${locations.join(', ')}` : '',
@@ -151,19 +145,7 @@ export default function CheckInModal({ type, onClose, onSaved }: Props) {
             <p className="text-sm font-semibold mb-1" style={{ color: '#e2e2f0' }}>
               Grip strength <span className="font-normal text-xs" style={{ color: '#6b6b80' }}>optional — squeeze test</span>
             </p>
-            <div className="flex gap-3">
-              <GripInput label="Left hand" value={gripLeft} set={setGripLeft} />
-              <GripInput label="Right hand" value={gripRight} set={setGripRight} />
-            </div>
-            {gripAsymmetry !== null && gripAsymmetry > 10 && (
-              <div className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2"
-                style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)' }}>
-                <span style={{ color: '#f97316' }}>⚠</span>
-                <p className="text-xs" style={{ color: '#f97316' }}>
-                  L/R asymmetry: <strong>{gripAsymmetry.toFixed(0)}%</strong> — asymmetry &gt;10% may indicate injury risk
-                </p>
-              </div>
-            )}
+            <GripInput label="Dominant hand" value={grip} set={setGrip} />
           </div>
 
           {/* Notes */}

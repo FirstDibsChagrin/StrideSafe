@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
 
-  const { user_id, pain_level, fatigue_level, stress_level, sleep_hours, soreness_notes, grip_left_lbs, grip_right_lbs } = body
+  const { user_id, pain_level, fatigue_level, stress_level, sleep_hours, soreness_notes, grip_strength_lbs } = body
 
   if (!user_id) return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
 
@@ -20,8 +20,7 @@ export async function POST(req: NextRequest) {
     stress_level,
     sleep_hours,
     soreness_notes,
-    grip_left_lbs: grip_left_lbs ?? null,
-    grip_right_lbs: grip_right_lbs ?? null,
+    grip_strength_lbs: grip_strength_lbs ?? null,
     checkin_date: today,
   })
 

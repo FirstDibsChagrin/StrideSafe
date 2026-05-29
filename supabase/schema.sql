@@ -101,14 +101,12 @@ CREATE TABLE public.daily_checkins (
   stress_level    INTEGER CHECK (stress_level BETWEEN 0 AND 10),
   sleep_hours     NUMERIC,
   soreness_notes  TEXT,
-  grip_left_lbs   NUMERIC,
-  grip_right_lbs  NUMERIC,
+  grip_strength_lbs NUMERIC,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (user_id, checkin_date)
 );
 -- Run in Supabase SQL editor to add grip strength to an existing table:
--- ALTER TABLE public.daily_checkins ADD COLUMN IF NOT EXISTS grip_left_lbs NUMERIC;
--- ALTER TABLE public.daily_checkins ADD COLUMN IF NOT EXISTS grip_right_lbs NUMERIC;
+-- ALTER TABLE public.daily_checkins ADD COLUMN IF NOT EXISTS grip_strength_lbs NUMERIC;
 
 -- ─── Injuries ─────────────────────────────────────────────────────────────────
 CREATE TABLE public.injuries (

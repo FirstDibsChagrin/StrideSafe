@@ -109,7 +109,7 @@ export default async function CoachPage() {
       supabase
         .from('daily_checkins')
         .select(
-          'user_id,checkin_date,pain_level,fatigue_level,stress_level,sleep_hours,soreness_notes,grip_left_lbs,grip_right_lbs',
+          'user_id,checkin_date,pain_level,fatigue_level,stress_level,sleep_hours,soreness_notes,grip_strength_lbs',
         )
         .in('user_id', runnerIds)
         .order('checkin_date', { ascending: false }),

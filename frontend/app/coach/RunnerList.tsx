@@ -18,8 +18,7 @@ interface RunnerCheckin {
   stress_level: number | null
   sleep_hours: number | null
   soreness_notes: string | null
-  grip_left_lbs: number | null
-  grip_right_lbs: number | null
+  grip_strength_lbs: number | null
 }
 
 interface RunnerInjury {
@@ -60,10 +59,6 @@ const inp: React.CSSProperties = {
   borderRadius: '8px', padding: '8px 12px', width: '100%', fontSize: '13px', outline: 'none',
 }
 
-function gripAsymmetry(left: number | null, right: number | null): number | null {
-  if (!left || !right || Math.max(left, right) === 0) return null
-  return Math.abs(left - right) / Math.max(left, right) * 100
-}
 
 function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string }) {
   const [expanded, setExpanded] = useState(false)
@@ -105,7 +100,6 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
   }
 
   const checkin = runner.latestCheckin
-  const asymPct = checkin ? gripAsymmetry(checkin.grip_left_lbs, checkin.grip_right_lbs) : null
 
   return (
     <div style={{ borderBottom: '1px solid #1a1a2e' }} className="last:border-b-0">
@@ -123,9 +117,6 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
               {runner.full_name ?? 'Unknown'}
             </span>
             {score !== null && score > 70 && <span style={{ color: '#ef4444' }}>⚑</span>}
-            {asymPct !== null && asymPct > 10 && (
-              <span title={`Grip asymmetry ${asymPct.toFixed(0)}%`} style={{ color: '#f97316', fontSize: '11px' }}>✋</span>
-            )}
           </div>
           <p className="text-xs mt-0.5" style={{ color: '#6b6b80' }}>
             Synced: {runner.latestMetrics?.date ?? 'never'}
@@ -198,22 +189,10 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
                   <span>Fatigue: <strong>{checkin.fatigue_level ?? '—'}</strong>/10</span>
                   <span>Stress: <strong>{checkin.stress_level ?? '—'}</strong>/10</span>
                   <span>Sleep: <strong>{checkin.sleep_hours ?? '—'}</strong> hrs</span>
-                  {(checkin.grip_left_lbs != null || checkin.grip_right_lbs != null) && (
-                    <>
-                      <span>Grip L: <strong>{checkin.grip_left_lbs ?? '—'}</strong> lbs</span>
-                      <span>Grip R: <strong>{checkin.grip_right_lbs ?? '—'}</strong> lbs</span>
-                    </>
+                  {checkin.grip_strength_lbs != null && (
+                    <span>Grip: <strong>{checkin.grip_strength_lbs}</strong> lbs</span>
                   )}
                 </div>
-                {asymPct !== null && asymPct > 10 && (
-                  <div className="flex items-center gap-2 rounded-lg px-3 py-2"
-                    style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)' }}>
-                    <span style={{ color: '#f97316' }}>⚠</span>
-                    <p className="text-xs" style={{ color: '#f97316' }}>
-                      Grip asymmetry: <strong>{asymPct.toFixed(0)}%</strong> L/R difference — asymmetry &gt;10% is a contributing injury risk factor
-                    </p>
-                  </div>
-                )}
                 {checkin.soreness_notes && (
                   <p className="text-sm italic" style={{ color: '#9ca3af' }}>&ldquo;{checkin.soreness_notes}&rdquo;</p>
                 )}
@@ -230,11 +209,6 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
               <div className="text-sm space-y-1" style={{ color: '#e2e2f0' }}>
                 <p>Global score: <strong>{runner.latestRisk.global_score}</strong>/100</p>
                 <p>Injury window: <strong>{runner.latestRisk.onset_days} days</strong></p>
-                {asymPct !== null && asymPct > 10 && (
-                  <p style={{ color: '#f97316' }}>
-                    ⚠ Grip asymmetry {asymPct.toFixed(0)}% — elevated neuromuscular fatigue risk
-                  </p>
-                )}
                 {runner.latestRisk.recommendations?.length ? (
                   <ul className="mt-2 space-y-1.5">
                     {runner.latestRisk.recommendations.map((r, i) => (
