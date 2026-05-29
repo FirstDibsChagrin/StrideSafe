@@ -1,14 +1,33 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useState } from 'react'
 
 import { createClient } from '@/lib/supabase/client'
 
-export default function LoginPage() {
+const field: React.CSSProperties = {
+  background: '#1e1e2e', border: '1px solid #2a2a3a', color: '#e2e2f0',
+  borderRadius: '8px', padding: '10px 14px', width: '100%', fontSize: '14px', outline: 'none',
+}
+
+const STRAVA_MESSAGES: Record<string, { text: string; color: string }> = {
+  limit: {
+    text: 'Strava sign-in is temporarily unavailable — the app has reached its athlete connection limit. Please sign up with email instead, or try again later.',
+    color: '#f97316',
+  },
+  error: {
+    text: 'Strava sign-in failed. Please try again or sign in with email.',
+    color: '#ef4444',
+  },
+}
+
+function LoginForm() {
   const router = useRouter()
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const stravaParam = searchParams.get('strava')
+  const stravaMsg = stravaParam ? STRAVA_MESSAGES[stravaParam] : null
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,30 +36,28 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
-    setLoading(true)
+    setError(''); setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
+    if (error) { setError(error.message); setLoading(false); return }
     router.push('/')
     router.refresh()
-  }
-
-  const field: React.CSSProperties = {
-    background: '#1e1e2e', border: '1px solid #2a2a3a', color: '#e2e2f0',
-    borderRadius: '8px', padding: '10px 14px', width: '100%', fontSize: '14px', outline: 'none',
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4" style={{ background: '#0d0d14' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold" style={{ color: '#f97316' }}>StrideSafe</h1>
+          <h1 className="text-3xl font-black tracking-tight" style={{ color: '#e2e2f0' }}>
+            Stride<span style={{ color: '#f97316' }}>Safe</span>
+          </h1>
           <p className="mt-1 text-sm" style={{ color: '#6b6b80' }}>Sign in to your account</p>
         </div>
+
+        {stravaMsg && (
+          <div className="mb-4 rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(249,115,22,0.08)', border: `1px solid ${stravaMsg.color}40`, color: stravaMsg.color }}>
+            {stravaMsg.text}
+          </div>
+        )}
 
         <div className="rounded-2xl p-8" style={{ background: '#13131f', border: '1px solid #2a2a3a' }}>
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -63,7 +80,7 @@ export default function LoginPage() {
               />
             </div>
 
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm" style={{ color: '#ef4444' }}>{error}</p>}
 
             <button
               type="submit" disabled={loading}
@@ -81,5 +98,13 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

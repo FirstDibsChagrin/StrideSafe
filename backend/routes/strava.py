@@ -82,6 +82,8 @@ async def strava_callback(
                 },
                 timeout=15.0,
             )
+        if token_resp.status_code == 403:
+            return RedirectResponse(url=f"{FRONTEND_URL}/login?strava=limit")
         if token_resp.status_code != 200:
             return RedirectResponse(url=f"{FRONTEND_URL}/login?strava=error")
     except Exception:
