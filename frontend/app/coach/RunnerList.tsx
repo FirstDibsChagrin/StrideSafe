@@ -41,9 +41,15 @@ interface RunnerData {
 interface RunnerListProps { runners: RunnerData[]; coachId: string }
 
 function riskBadgeStyle(score: number): React.CSSProperties {
-  if (score >= 70) return { background: 'rgba(239,68,68,0.15)', color: '#f87171' }
-  if (score >= 40) return { background: 'rgba(250,204,21,0.12)', color: '#fbbf24' }
-  return { background: 'rgba(74,222,128,0.12)', color: '#4ade80' }
+  if (score >= 70) return { background: 'var(--red-dim)', color: 'var(--red)', border: '1px solid var(--red-border)' }
+  if (score >= 40) return { background: 'var(--amber-dim)', color: 'var(--amber)', border: '1px solid rgba(245,158,11,0.2)' }
+  return { background: 'var(--green-dim)', color: 'var(--green)', border: '1px solid var(--green-border)' }
+}
+
+function riskDot(score: number) {
+  if (score >= 70) return 'var(--red)'
+  if (score >= 40) return 'var(--amber)'
+  return 'var(--green)'
 }
 
 function formatPace(secPerKm: number | null) {
@@ -54,11 +60,34 @@ function formatPace(secPerKm: number | null) {
   return `${min}:${sec.toString().padStart(2, '0')}`
 }
 
-const inp: React.CSSProperties = {
-  background: '#0d0d14', border: '1px solid #2a2a3a', color: '#e2e2f0',
-  borderRadius: '8px', padding: '8px 12px', width: '100%', fontSize: '13px', outline: 'none',
+// Chevron icon
+function ChevronIcon({ down }: { down: boolean }) {
+  return (
+    <svg
+      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+      style={{ color: 'var(--text-muted)', transform: down ? 'rotate(180deg)' : undefined, transition: 'transform 0.15s ease' }}
+      aria-hidden="true"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
 }
 
+// Metric pill
+function MetricPill({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div
+      className="flex flex-col items-center px-3 py-2 rounded-xl text-center"
+      style={{ background: 'var(--bg-elevated)', minWidth: '72px' }}
+    >
+      <span className="text-lg font-black tabular-nums" style={{ fontFamily: 'var(--font-display)', color: color ?? 'var(--text-primary)' }}>
+        {value}
+      </span>
+      <span className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{label}</span>
+    </div>
+  )
+}
 
 function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string }) {
   const [expanded, setExpanded] = useState(false)
@@ -82,7 +111,8 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ runner_id: runner.id, coach_id: coachId, note }),
       })
-      setNote(''); setNoteSaved(true)
+      setNote('')
+      setNoteSaved(true)
       setTimeout(() => setNoteSaved(false), 3000)
     } catch { /* silent */ } finally { setSaving(false) }
   }
@@ -102,73 +132,157 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
   const checkin = runner.latestCheckin
 
   return (
-    <div style={{ borderBottom: '1px solid #1a1a2e' }} className="last:border-b-0">
+    <div style={{ borderBottom: '1px solid var(--border-subtle)' }} className="last:border-b-0">
       {/* Summary row */}
       <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors"
-        style={{ background: expanded ? '#111120' : '#13131f' }}
-        onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = '#111120' }}
-        onMouseLeave={e => { if (!expanded) e.currentTarget.style.background = '#13131f' }}
+        onClick={() => setExpanded(v => !v)}
+        className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors"
+        style={{ background: expanded ? 'var(--bg-card-hover)' : 'var(--bg-card)' }}
+        onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = 'var(--bg-card-hover)' }}
+        onMouseLeave={e => { if (!expanded) e.currentTarget.style.background = 'var(--bg-card)' }}
+        aria-expanded={expanded}
       >
+        {/* Avatar */}
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+          style={{
+            background: score !== null ? `${riskDot(score)}20` : 'var(--bg-elevated)',
+            color: score !== null ? riskDot(score) : 'var(--text-muted)',
+            border: `1px solid ${score !== null ? `${riskDot(score)}40` : 'var(--border)'}`,
+          }}
+        >
+          {(runner.full_name ?? 'U').charAt(0).toUpperCase()}
+        </div>
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-semibold truncate" style={{ color: '#e2e2f0' }}>
+            <span className="font-semibold truncate text-sm" style={{ color: 'var(--text-primary)' }}>
               {runner.full_name ?? 'Unknown'}
             </span>
-            {score !== null && score > 70 && <span style={{ color: '#ef4444' }}>⚑</span>}
+            {score !== null && score >= 70 && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-label="High risk flag">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            )}
+            {injuries.length > 0 && (
+              <span
+                className="rounded-full px-1.5 py-0.5 text-xs font-bold"
+                style={{ background: 'var(--orange-dim)', color: 'var(--orange)' }}
+              >
+                {injuries.length}
+              </span>
+            )}
           </div>
-          <p className="text-xs mt-0.5" style={{ color: '#6b6b80' }}>
-            Synced: {runner.latestMetrics?.date ?? 'never'}
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            Last sync: {runner.latestMetrics?.date ?? 'never'}
           </p>
         </div>
 
-        <div className="flex-shrink-0 w-14 text-center">
+        {/* Risk badge */}
+        <div className="w-14 text-center flex-shrink-0">
           {score !== null ? (
             <span className="inline-block rounded-full px-2 py-0.5 text-xs font-bold" style={riskBadgeStyle(score)}>
               {score}
             </span>
-          ) : <span style={{ color: '#3a3a50', fontSize: '12px' }}>—</span>}
+          ) : (
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
+          )}
         </div>
 
-        <div className="flex-shrink-0 w-16 text-right">
-          <p className="text-xs" style={{ color: '#6b6b80' }}>ACWR</p>
-          <p className="text-sm font-bold tabular-nums" style={{ color: '#e2e2f0' }}>
+        {/* ACWR */}
+        <div className="w-16 text-right flex-shrink-0">
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>ACWR</p>
+          <p className="text-sm font-bold tabular-nums" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
             {runner.latestMetrics?.acwr?.toFixed(2) ?? '—'}
           </p>
         </div>
 
-        <div className="flex-shrink-0 w-20 text-right">
-          <p className="text-xs" style={{ color: '#6b6b80' }}>Wk mi</p>
-          <p className="text-sm font-bold tabular-nums" style={{ color: '#e2e2f0' }}>{weeklyMi}</p>
+        {/* Weekly mi */}
+        <div className="w-20 text-right flex-shrink-0">
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Wk mi</p>
+          <p className="text-sm font-bold tabular-nums" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+            {weeklyMi}
+          </p>
         </div>
 
-        <span className="flex-shrink-0 text-xs" style={{ color: '#6b6b80' }}>{expanded ? '▲' : '▼'}</span>
+        <ChevronIcon down={expanded} />
       </button>
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="px-4 pb-5 space-y-5" style={{ background: '#0d0d14' }}>
+        <div className="px-5 pb-6 space-y-6" style={{ background: 'var(--bg-base)', borderTop: '1px solid var(--border-subtle)' }}>
+
+          {/* Quick stats */}
+          <div className="flex gap-3 pt-5 flex-wrap">
+            {score !== null && (
+              <MetricPill label="Risk" value={String(score)} color={riskDot(score)} />
+            )}
+            {runner.latestMetrics?.acwr != null && (
+              <MetricPill
+                label="ACWR"
+                value={runner.latestMetrics.acwr.toFixed(2)}
+                color={runner.latestMetrics.acwr > 1.3 ? 'var(--red)' : runner.latestMetrics.acwr < 0.8 ? 'var(--amber)' : 'var(--green)'}
+              />
+            )}
+            {checkin?.pain_level != null && (
+              <MetricPill label="Pain" value={`${checkin.pain_level}/10`} color={(checkin.pain_level ?? 0) > 5 ? 'var(--red)' : 'var(--green)'} />
+            )}
+            {checkin?.fatigue_level != null && (
+              <MetricPill label="Fatigue" value={`${checkin.fatigue_level}/10`} color={(checkin.fatigue_level ?? 0) > 6 ? 'var(--amber)' : 'var(--text-secondary)'} />
+            )}
+            {checkin?.sleep_hours != null && (
+              <MetricPill label="Sleep" value={`${checkin.sleep_hours}h`} color={(checkin.sleep_hours ?? 8) < 6 ? 'var(--amber)' : 'var(--text-secondary)'} />
+            )}
+            {checkin?.grip_strength_lbs != null && (
+              <MetricPill label="Grip" value={`${checkin.grip_strength_lbs}`} />
+            )}
+          </div>
+
+          {/* Notes */}
+          {checkin?.soreness_notes && (
+            <div
+              className="rounded-xl px-4 py-3 text-sm italic"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+            >
+              &ldquo;{checkin.soreness_notes}&rdquo;
+            </div>
+          )}
 
           {/* Last 5 runs */}
-          <div className="pt-4">
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#6b6b80' }}>Last 5 Runs</p>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+              Last 5 Runs
+            </p>
             {runner.lastRuns.length === 0 ? (
-              <p className="text-sm" style={{ color: '#6b6b80' }}>No runs on record.</p>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No runs on record.</p>
             ) : (
-              <div>
+              <div
+                className="rounded-xl overflow-hidden"
+                style={{ border: '1px solid var(--border)' }}
+              >
                 {runner.lastRuns.map((run, i) => (
-                  <div key={run.strava_activity_id} className="flex items-center gap-3 py-2"
-                    style={{ borderTop: i > 0 ? '1px solid #111120' : undefined }}>
+                  <div
+                    key={run.strava_activity_id}
+                    className="flex items-center gap-3 px-4 py-2.5"
+                    style={{
+                      background: 'var(--bg-card)',
+                      borderTop: i > 0 ? '1px solid var(--border-subtle)' : undefined,
+                    }}
+                  >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: '#e2e2f0' }}>
-                        {run.workout_type ?? 'Run'} · <span style={{ color: '#6b6b80' }}>{run.activity_date?.slice(0, 10) ?? '—'}</span>
+                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {run.workout_type ?? 'Easy Run'}
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {run.activity_date?.slice(0, 10) ?? '—'}
                       </p>
                     </div>
-                    <p className="text-sm tabular-nums" style={{ color: '#e2e2f0' }}>
+                    <p className="text-sm tabular-nums font-medium" style={{ color: 'var(--text-primary)' }}>
                       {run.distance_meters != null ? (run.distance_meters / 1609.34).toFixed(2) + ' mi' : '—'}
                     </p>
-                    <p className="text-sm tabular-nums" style={{ color: '#6b6b80' }}>
+                    <p className="text-sm tabular-nums" style={{ color: 'var(--text-muted)' }}>
                       {formatPace(run.avg_pace_sec_per_km)}/mi
                     </p>
                   </div>
@@ -177,72 +291,67 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
             )}
           </div>
 
-          {/* Latest check-in */}
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#6b6b80' }}>
-              Check-In {checkin ? `— ${checkin.checkin_date}` : ''}
-            </p>
-            {checkin ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm" style={{ color: '#e2e2f0' }}>
-                  <span>Pain: <strong>{checkin.pain_level ?? '—'}</strong>/10</span>
-                  <span>Fatigue: <strong>{checkin.fatigue_level ?? '—'}</strong>/10</span>
-                  <span>Stress: <strong>{checkin.stress_level ?? '—'}</strong>/10</span>
-                  <span>Sleep: <strong>{checkin.sleep_hours ?? '—'}</strong> hrs</span>
-                  {checkin.grip_strength_lbs != null && (
-                    <span>Grip: <strong>{checkin.grip_strength_lbs}</strong> lbs</span>
-                  )}
-                </div>
-                {checkin.soreness_notes && (
-                  <p className="text-sm italic" style={{ color: '#9ca3af' }}>&ldquo;{checkin.soreness_notes}&rdquo;</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm" style={{ color: '#6b6b80' }}>No check-in on record.</p>
-            )}
-          </div>
-
-          {/* Risk breakdown */}
-          {runner.latestRisk && (
+          {/* Risk recommendations */}
+          {runner.latestRisk?.recommendations?.length ? (
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#6b6b80' }}>Risk Breakdown</p>
-              <div className="text-sm space-y-1" style={{ color: '#e2e2f0' }}>
-                <p>Global score: <strong>{runner.latestRisk.global_score}</strong>/100</p>
-                <p>Injury window: <strong>{runner.latestRisk.onset_days} days</strong></p>
-                {runner.latestRisk.recommendations?.length ? (
-                  <ul className="mt-2 space-y-1.5">
-                    {runner.latestRisk.recommendations.map((r, i) => (
-                      <li key={i} className="flex gap-2" style={{ color: '#9ca3af' }}>
-                        <span style={{ color: '#f97316', flexShrink: 0 }}>›</span> {r}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
+              <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+                Recommendations
+              </p>
+              <div className="space-y-2">
+                {runner.latestRisk.recommendations.map((rec, i) => (
+                  <div key={i} className="flex gap-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      className="flex-shrink-0 mt-0.5" aria-hidden="true">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                    {rec}
+                  </div>
+                ))}
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* Unconfirmed injuries */}
           {injuries.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#f97316' }}>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--orange)' }}>
                 Unconfirmed Injuries
               </p>
               <div className="space-y-2">
                 {injuries.map((inj) => (
-                  <div key={inj.id} className="flex items-center justify-between rounded-xl px-3 py-2.5"
-                    style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.18)' }}>
-                    <div className="text-sm" style={{ color: '#e2e2f0' }}>
-                      <p>{inj.injury_type ?? 'Injury reported'}{inj.body_location ? ` — ${inj.body_location}` : ''}</p>
+                  <div
+                    key={inj.id}
+                    className="flex items-center justify-between rounded-xl px-4 py-3"
+                    style={{ background: 'var(--orange-dim)', border: '1px solid var(--orange-border)' }}
+                  >
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {inj.injury_type ?? 'Injury reported'}
+                        {inj.body_location && (
+                          <span style={{ color: 'var(--text-secondary)' }}> — {inj.body_location}</span>
+                        )}
+                      </p>
                       {inj.reported_at && (
-                        <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{inj.reported_at.slice(0, 10)}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                          Reported {inj.reported_at.slice(0, 10)}
+                        </p>
                       )}
                     </div>
                     <button
-                      onClick={() => handleConfirmInjury(inj.id)} disabled={confirmingId === inj.id}
-                      className="ml-4 rounded-lg px-3 py-1 text-xs font-bold text-white disabled:opacity-60"
-                      style={{ background: '#f97316' }}
-                    >{confirmingId === inj.id ? 'Confirming…' : 'Confirm'}</button>
+                      onClick={() => handleConfirmInjury(inj.id)}
+                      disabled={confirmingId === inj.id}
+                      className="ml-4 rounded-lg px-3 py-1.5 text-xs font-bold text-white transition-opacity disabled:opacity-50"
+                      style={{ background: 'var(--orange)' }}
+                    >
+                      {confirmingId === inj.id ? (
+                        <span className="flex items-center gap-1.5">
+                          <svg className="animate-spin" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
+                          </svg>
+                          Confirming…
+                        </span>
+                      ) : 'Confirm'}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -251,20 +360,48 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
 
           {/* Coach note */}
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#6b6b80' }}>Add Note</p>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+              Add Note
+            </p>
             <textarea
-              value={note} onChange={(e) => setNote(e.target.value)} rows={2}
-              placeholder="Write a note for this runner…" style={inp}
-              onFocus={e => (e.target.style.borderColor = '#f97316')}
-              onBlur={e => (e.target.style.borderColor = '#2a2a3a')}
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              rows={2}
+              placeholder="Write a note for this runner…"
+              className="w-full rounded-xl px-4 py-3 text-sm transition-colors resize-none"
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                outline: 'none',
+              }}
+              onFocus={e => (e.target.style.borderColor = 'var(--orange)')}
+              onBlur={e => (e.target.style.borderColor = 'var(--border)')}
             />
             <div className="flex items-center gap-3 mt-2">
               <button
-                onClick={handleSaveNote} disabled={saving || !note.trim()}
-                className="rounded-lg px-4 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-                style={{ background: '#f97316' }}
-              >{saving ? 'Saving…' : 'Save Note'}</button>
-              {noteSaved && <span className="text-xs" style={{ color: '#4ade80' }}>✓ Saved</span>}
+                onClick={handleSaveNote}
+                disabled={saving || !note.trim()}
+                className="rounded-lg px-4 py-1.5 text-xs font-bold text-white transition-opacity disabled:opacity-40"
+                style={{ background: 'var(--orange)' }}
+              >
+                {saving ? (
+                  <span className="flex items-center gap-1.5">
+                    <svg className="animate-spin" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
+                    </svg>
+                    Saving…
+                  </span>
+                ) : 'Save Note'}
+              </button>
+              {noteSaved && (
+                <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--green)' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Saved
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -276,9 +413,9 @@ function RunnerRow({ runner, coachId }: { runner: RunnerData; coachId: string })
 export default function RunnerList({ runners, coachId }: RunnerListProps) {
   if (runners.length === 0) {
     return (
-      <p className="px-5 py-6 text-sm" style={{ color: '#6b6b80', background: '#13131f' }}>
-        No runners found for your team.
-      </p>
+      <div className="px-5 py-8 text-center">
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No runners found for your team.</p>
+      </div>
     )
   }
   return (

@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-
 import { createClient } from '@/lib/supabase/server'
 import AccountMenu from '@/components/AccountMenu'
 import CheckInCard from './CheckInCard'
@@ -54,9 +53,9 @@ function formatDistance(meters: number | null): string {
 }
 
 function riskColor(score: number) {
-  if (score >= 70) return '#ef4444'
-  if (score >= 40) return '#f97316'
-  return '#4ade80'
+  if (score >= 70) return 'var(--red)'
+  if (score >= 40) return 'var(--amber)'
+  return 'var(--green)'
 }
 
 function riskLabel(score: number) {
@@ -65,39 +64,52 @@ function riskLabel(score: number) {
   return 'Low Risk'
 }
 
+function riskDimColor(score: number) {
+  if (score >= 70) return 'var(--red-dim)'
+  if (score >= 40) return 'var(--amber-dim)'
+  return 'var(--green-dim)'
+}
+
 function runDotColor(workoutType: string | null): string {
-  if (!workoutType) return '#4ade80'
+  if (!workoutType) return 'var(--green)'
   const t = workoutType.toLowerCase()
-  if (t.includes('race') || t.includes('interval') || t.includes('tempo')) return '#ef4444'
-  if (t.includes('long') || t.includes('workout')) return '#f97316'
-  return '#4ade80'
+  if (t.includes('race') || t.includes('interval') || t.includes('tempo')) return 'var(--red)'
+  if (t.includes('long') || t.includes('workout')) return 'var(--amber)'
+  return 'var(--green)'
 }
 
 function AcwrBar({ acwr }: { acwr: number }) {
   const pct = Math.min((acwr / 2.0) * 100, 100)
-  const acwrColor = acwr > 1.3 ? '#ef4444' : acwr < 0.8 ? '#eab308' : '#4ade80'
+  const acwrColor = acwr > 1.3 ? 'var(--red)' : acwr < 0.8 ? 'var(--amber)' : 'var(--green)'
+  const acwrLabel = acwr > 1.3 ? 'Overreaching — reduce load' : acwr < 0.8 ? 'Under-trained — build gradually' : 'Sweet spot — keep it up'
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-start justify-between mb-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#6b6b80' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-0.5" style={{ color: 'var(--text-muted)' }}>
             Acute:Chronic Workload Ratio
           </p>
-          <p className="text-xs mt-0.5" style={{ color: '#6b6b80' }}>
-            {acwr > 1.3 ? 'Overreaching — reduce load' : acwr < 0.8 ? 'Under-trained — build gradually' : 'Sweet spot — keep it up'}
-          </p>
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{acwrLabel}</p>
         </div>
-        <span className="text-2xl font-black tabular-nums" style={{ color: acwrColor }}>{acwr.toFixed(2)}</span>
+        <span
+          className="text-2xl font-black tabular-nums"
+          style={{ fontFamily: 'var(--font-display)', color: acwrColor }}
+        >
+          {acwr.toFixed(2)}
+        </span>
       </div>
-      <div className="relative h-2 rounded-full overflow-hidden" style={{ background: '#1e1e2e' }}>
-        <div className="absolute inset-0 rounded-full" style={{
-          background: 'linear-gradient(to right, #eab308 0%, #4ade80 40%, #4ade80 65%, #f97316 80%, #ef4444 100%)',
-        }} />
-        <div className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow"
-          style={{ left: `calc(${pct}% - 7px)`, background: acwrColor }} />
+      <div className="relative h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{ background: 'linear-gradient(to right, var(--amber) 0%, var(--green) 40%, var(--green) 65%, var(--amber) 80%, var(--red) 100%)' }}
+        />
+        <div
+          className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow"
+          style={{ left: `calc(${pct}% - 7px)`, background: acwrColor }}
+        />
       </div>
-      <div className="flex text-xs mt-2" style={{ color: '#4a4a60' }}>
+      <div className="flex text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
         <span className="flex-1">Under-trained</span>
         <span className="flex-1 text-center">Sweet spot</span>
         <span className="flex-1 text-right">Danger zone</span>
@@ -138,15 +150,19 @@ export default async function DashboardPage() {
   const currentWeeklyMi = (latestMetric?.weekly_mileage_km ?? 0) * 0.621371
   const score = riskScore?.global_score ?? 0
   const color = riskColor(score)
+  const dimColor = riskDimColor(score)
 
   return (
-    <div style={{ background: '#0d0d14', minHeight: '100vh' }}>
+    <div style={{ background: 'var(--bg-base)', minHeight: '100vh' }}>
 
       {/* Top bar */}
-      <div style={{ borderBottom: '1px solid #1a1a2e' }}>
+      <header style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-base)' }}>
         <div className="mx-auto max-w-2xl flex items-center justify-between px-5 py-4">
-          <span className="text-lg font-black tracking-tight" style={{ color: '#e2e2f0' }}>
-            Stride<span style={{ color: '#f97316' }}>Safe</span>
+          <span
+            className="text-xl font-black tracking-tight"
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+          >
+            Stride<span style={{ color: 'var(--orange)' }}>Safe</span>
           </span>
           <div className="flex items-center gap-2">
             <InjuryModal userId={user.id} />
@@ -154,53 +170,81 @@ export default async function DashboardPage() {
             <AccountMenu email={user.email ?? ''} />
           </div>
         </div>
-      </div>
+      </header>
 
       <main className="mx-auto max-w-2xl px-5 py-6 space-y-4">
 
         {/* Risk Score — hero card */}
-        <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: '#13131f', border: '1px solid #1e1e2e' }}>
-          {/* Colored left accent */}
-          <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl" style={{ background: color }} />
+        <div
+          className="rounded-2xl p-6 relative overflow-hidden"
+          style={{ background: 'var(--bg-card)', border: `1px solid var(--border)` }}
+        >
+          {/* Left accent */}
+          <div
+            className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl"
+            style={{ background: color }}
+          />
 
-          <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#6b6b80' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
             Injury Risk Score
           </p>
 
           {riskScore ? (
             <div className="flex items-end justify-between gap-4">
               <div>
-                <div className="flex items-end gap-2 mb-1">
-                  <span className="text-7xl font-black leading-none tabular-nums" style={{ color }}>{score}</span>
-                  <span className="text-xl font-light mb-2" style={{ color: '#3a3a50' }}>/100</span>
+                <div className="flex items-end gap-2 mb-2">
+                  <span
+                    className="text-7xl font-black leading-none tabular-nums"
+                    style={{ fontFamily: 'var(--font-display)', color }}
+                  >
+                    {score}
+                  </span>
+                  <span className="text-xl font-light mb-2" style={{ color: 'var(--border)' }}>/100</span>
                 </div>
-                <p className="text-base font-bold mb-1" style={{ color }}>{riskLabel(score)}</p>
-                <p className="text-xs" style={{ color: '#6b6b80' }}>
-                  Injury window: {riskScore.onset_days} days · {riskScore.date}
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                  style={{ background: dimColor, color }}
+                >
+                  <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor">
+                    <circle cx="3" cy="3" r="3" />
+                  </svg>
+                  {riskLabel(score)}
+                </span>
+                <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+                  Injury window: {riskScore.onset_days} days · Updated {riskScore.date}
                 </p>
               </div>
-              {/* Score ring */}
-              <svg width="88" height="88" viewBox="0 0 88 88" className="flex-shrink-0 opacity-30">
-                <circle cx="44" cy="44" r="36" fill="none" stroke="#2a2a3a" strokeWidth="8" />
+
+              {/* Ring */}
+              <svg width="88" height="88" viewBox="0 0 88 88" className="flex-shrink-0" style={{ opacity: 0.35 }}>
+                <circle cx="44" cy="44" r="36" fill="none" stroke="var(--border)" strokeWidth="8" />
                 <circle
                   cx="44" cy="44" r="36" fill="none" stroke={color} strokeWidth="8"
                   strokeDasharray={`${(score / 100) * 226} 226`}
-                  strokeLinecap="round" transform="rotate(-90 44 44)"
+                  strokeLinecap="round"
+                  transform="rotate(-90 44 44)"
                 />
               </svg>
             </div>
           ) : (
             <div>
-              <span className="text-7xl font-black leading-none" style={{ color: '#3a3a50' }}>—</span>
-              <p className="text-sm mt-2" style={{ color: '#6b6b80' }}>Sync runs to compute your risk score</p>
+              <span className="text-7xl font-black leading-none" style={{ fontFamily: 'var(--font-display)', color: 'var(--border)' }}>—</span>
+              <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>Sync runs to compute your risk score</p>
             </div>
           )}
 
           {riskScore?.recommendations?.length ? (
-            <div className="mt-5 pt-4 space-y-1.5" style={{ borderTop: '1px solid #1a1a2e' }}>
+            <div className="mt-5 pt-4 space-y-2" style={{ borderTop: '1px solid var(--border-subtle)' }}>
               {riskScore.recommendations.slice(0, 3).map((rec, i) => (
-                <div key={i} className="flex gap-2.5 text-sm" style={{ color: '#9ca3af' }}>
-                  <span className="flex-shrink-0 font-bold" style={{ color }}>›</span>
+                <div key={i} className="flex gap-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <svg
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color}
+                    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    className="flex-shrink-0 mt-0.5"
+                    aria-hidden="true"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
                   {rec}
                 </div>
               ))}
@@ -209,31 +253,46 @@ export default async function DashboardPage() {
         </div>
 
         {/* Stats strip */}
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#13131f', border: '1px solid #1e1e2e' }}>
-          <div className="flex divide-x" style={{ '--tw-divide-opacity': 1 } as React.CSSProperties}>
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+        >
+          <div className="flex">
             {[
               {
-                label: 'Weekly mi',
+                label: 'Weekly Miles',
                 value: currentWeeklyMi > 0 ? currentWeeklyMi.toFixed(1) : '—',
-                sub: currentWeeklyMi > 50 ? '⚠ High volume' : currentWeeklyMi > 0 ? '✓ On track' : 'No data yet',
-                subColor: currentWeeklyMi > 50 ? '#ef4444' : currentWeeklyMi > 0 ? '#4ade80' : '#6b6b80',
+                sub: currentWeeklyMi > 50 ? 'High volume' : currentWeeklyMi > 0 ? 'On track' : 'No data yet',
+                subColor: currentWeeklyMi > 50 ? 'var(--red)' : currentWeeklyMi > 0 ? 'var(--green)' : 'var(--text-muted)',
+                icon: currentWeeklyMi > 50 ? '⚠' : currentWeeklyMi > 0 ? '✓' : null,
               },
               {
                 label: 'ACWR',
                 value: latestMetric ? currentAcwr.toFixed(2) : '—',
-                sub: currentAcwr > 1.3 ? '⚠ Spike risk' : currentAcwr < 0.8 ? '↓ Under-trained' : '✓ Safe zone',
-                subColor: currentAcwr > 1.3 || currentAcwr < 0.8 ? '#f97316' : '#4ade80',
+                sub: currentAcwr > 1.3 ? 'Spike risk' : currentAcwr < 0.8 ? 'Under-trained' : 'Safe zone',
+                subColor: currentAcwr > 1.3 || currentAcwr < 0.8 ? 'var(--amber)' : 'var(--green)',
               },
               {
-                label: 'Runs logged',
+                label: 'Runs',
                 value: String(activities.length),
-                sub: hasCheckedInToday ? '✓ Checked in' : 'No check-in yet',
-                subColor: hasCheckedInToday ? '#4ade80' : '#6b6b80',
+                sub: hasCheckedInToday ? 'Checked in' : 'No check-in',
+                subColor: hasCheckedInToday ? 'var(--green)' : 'var(--text-muted)',
               },
             ].map(({ label, value, sub, subColor }, i) => (
-              <div key={label} className="flex-1 px-4 py-4 text-center" style={{ borderLeft: i > 0 ? '1px solid #1a1a2e' : 'none' }}>
-                <p className="text-3xl font-black tabular-nums" style={{ color: '#e2e2f0' }}>{value}</p>
-                <p className="text-xs font-bold uppercase tracking-wide mt-1" style={{ color: '#6b6b80' }}>{label}</p>
+              <div
+                key={label}
+                className="flex-1 px-4 py-4 text-center"
+                style={{ borderLeft: i > 0 ? '1px solid var(--border-subtle)' : 'none' }}
+              >
+                <p
+                  className="text-3xl font-black tabular-nums"
+                  style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+                >
+                  {value}
+                </p>
+                <p className="text-xs font-medium uppercase tracking-wide mt-1" style={{ color: 'var(--text-muted)' }}>
+                  {label}
+                </p>
                 <p className="text-xs mt-0.5" style={{ color: subColor }}>{sub}</p>
               </div>
             ))}
@@ -245,20 +304,37 @@ export default async function DashboardPage() {
 
         {/* ACWR bar */}
         {latestMetric && (
-          <div className="rounded-2xl p-5" style={{ background: '#13131f', border: '1px solid #1e1e2e' }}>
+          <div
+            className="rounded-2xl p-5"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+          >
             <AcwrBar acwr={currentAcwr} />
           </div>
         )}
 
         {/* Recent Runs */}
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#13131f', border: '1px solid #1e1e2e' }}>
-          <div className="px-5 py-4" style={{ borderBottom: '1px solid #1a1a2e' }}>
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#6b6b80' }}>Recent Runs</p>
-          </div>
-          {activities.length === 0 ? (
-            <p className="px-5 py-6 text-sm" style={{ color: '#6b6b80' }}>
-              No runs synced yet — connect Strava to get started.
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+        >
+          <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+              Recent Runs
             </p>
+            {activities.length > 0 && (
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{activities.length} synced</span>
+            )}
+          </div>
+
+          {activities.length === 0 ? (
+            <div className="px-5 py-8 text-center">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                className="mx-auto mb-3" style={{ color: 'var(--border)' }}>
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No runs synced yet</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Connect Strava to get started</p>
+            </div>
           ) : (
             activities.map((a, i) => {
               const dotColor = runDotColor(a.workout_type)
@@ -266,32 +342,37 @@ export default async function DashboardPage() {
                 <div
                   key={a.strava_activity_id}
                   className="flex items-center gap-4 px-5 py-3.5"
-                  style={{ borderTop: i > 0 ? '1px solid #0e0e18' : undefined }}
+                  style={{ borderTop: i > 0 ? '1px solid var(--border-subtle)' : undefined }}
                 >
-                  <div className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ background: dotColor, boxShadow: `0 0 6px ${dotColor}` }} />
+                  <div
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ background: dotColor, boxShadow: `0 0 6px ${dotColor}` }}
+                  />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold" style={{ color: '#e2e2f0' }}>
-                      {a.workout_type ?? 'Run'}
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {a.workout_type ?? 'Easy Run'}
                     </p>
-                    <p className="text-xs mt-0.5" style={{ color: '#6b6b80' }}>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                       {a.activity_date?.slice(0, 10) ?? '—'}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold tabular-nums" style={{ color: '#e2e2f0' }}>
+                    <p className="text-sm font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
                       {formatDistance(a.distance_meters)}
                     </p>
-                    <p className="text-xs" style={{ color: '#6b6b80' }}>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                       {formatPace(a.avg_pace_sec_per_km)}/mi
                     </p>
                   </div>
                   {todayCheckin && a.activity_date?.slice(0, 10) === today && (
-                    <div className="text-right flex-shrink-0 pl-3" style={{ borderLeft: '1px solid #1a1a2e' }}>
-                      <p className="text-xs" style={{ color: (todayCheckin.pain_level ?? 0) > 5 ? '#ef4444' : '#6b6b80' }}>
+                    <div
+                      className="text-right flex-shrink-0 pl-3"
+                      style={{ borderLeft: '1px solid var(--border-subtle)' }}
+                    >
+                      <p className="text-xs" style={{ color: (todayCheckin.pain_level ?? 0) > 5 ? 'var(--red)' : 'var(--text-muted)' }}>
                         Pain {todayCheckin.pain_level ?? 0}
                       </p>
-                      <p className="text-xs" style={{ color: (todayCheckin.fatigue_level ?? 0) > 5 ? '#f97316' : '#6b6b80' }}>
+                      <p className="text-xs" style={{ color: (todayCheckin.fatigue_level ?? 0) > 5 ? 'var(--amber)' : 'var(--text-muted)' }}>
                         Fatigue {todayCheckin.fatigue_level ?? 0}
                       </p>
                     </div>
@@ -304,33 +385,45 @@ export default async function DashboardPage() {
 
         {/* Active Injuries */}
         {injuries.length > 0 && (
-          <div className="rounded-2xl overflow-hidden" style={{ background: '#13131f', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(239,68,68,0.15)' }}>
-              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#ef4444' }}>Active Injuries</p>
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--red-border)' }}
+          >
+            <div className="flex items-center gap-2 px-5 py-4" style={{ borderBottom: '1px solid var(--red-border)' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--red)' }}>
+                Active Injuries
+              </p>
             </div>
             {injuries.map((injury, i) => (
               <div
                 key={injury.id}
                 className="flex items-start justify-between px-5 py-4"
-                style={{ borderTop: i > 0 ? '1px solid #150a0a' : undefined }}
+                style={{ borderTop: i > 0 ? '1px solid var(--red-dim)' : undefined }}
               >
                 <div className="space-y-0.5">
-                  <p className="text-sm font-semibold" style={{ color: '#e2e2f0' }}>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                     {injury.injury_type ?? 'Injury'}
                     {injury.body_location && (
-                      <span className="font-normal" style={{ color: '#6b6b80' }}> — {injury.body_location}</span>
+                      <span className="font-normal" style={{ color: 'var(--text-secondary)' }}> — {injury.body_location}</span>
                     )}
                   </p>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs" style={{ color: '#6b6b80' }}>
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
                     {injury.start_date && <span>Since {injury.start_date}</span>}
                     {injury.severity != null && <span>Severity {injury.severity}/10</span>}
                     {injury.estimated_days_out != null && <span>~{injury.estimated_days_out} days out</span>}
                   </div>
                 </div>
-                <span className="flex-shrink-0 ml-4 mt-0.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                <span
+                  className="flex-shrink-0 ml-4 mt-0.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
                   style={injury.confirmed_by_coach
-                    ? { background: 'rgba(249,115,22,0.15)', color: '#f97316' }
-                    : { background: '#1e1e2e', color: '#6b6b80' }}>
+                    ? { background: 'var(--orange-dim)', color: 'var(--orange)' }
+                    : { background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+                >
                   {injury.confirmed_by_coach ? 'Confirmed' : 'Pending'}
                 </span>
               </div>
