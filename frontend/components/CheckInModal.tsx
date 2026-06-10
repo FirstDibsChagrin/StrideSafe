@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 interface Props { type: 'pre' | 'post'; onClose: () => void; onSaved: () => void }
 
@@ -49,7 +48,6 @@ function GripInput({ label, value, set }: { label: string; value: string; set: (
 }
 
 export default function CheckInModal({ type, onClose, onSaved }: Props) {
-  const supabase = createClient()
 
   const [pain, setPain] = useState(0)
   const [fatigue, setFatigue] = useState(0)
@@ -69,14 +67,10 @@ export default function CheckInModal({ type, onClose, onSaved }: Props) {
   async function handleSave() {
     setSaving(true); setError(null)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not signed in')
-
-      const today = new Date().toISOString().split('T')[0]
-      const { error: upsertError } = await supabase.from('daily_checkins').upsert(
-        {
-          user_id: user.id,
-          checkin_date: today,
+      const res = await fetch('/api/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           pain_level: pain,
           fatigue_level: fatigue,
           stress_level: stress,
@@ -85,10 +79,10 @@ export default function CheckInModal({ type, onClose, onSaved }: Props) {
             notes.trim(),
             locations.length ? `Locations: ${locations.join(', ')}` : '',
           ].filter(Boolean).join(' | ') || null,
-        },
-        { onConflict: 'user_id,checkin_date' },
-      )
-      if (upsertError) throw upsertError
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Failed to save')
       onSaved(); onClose()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save')
