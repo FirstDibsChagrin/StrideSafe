@@ -77,12 +77,11 @@ export default function CheckInModal({ type, onClose, onSaved }: Props) {
         {
           user_id: user.id,
           checkin_date: today,
-          checkin_type: type,
           pain_level: pain,
           fatigue_level: fatigue,
           stress_level: stress,
           grip_strength_lbs: gripNum,
-          notes: [
+          soreness_notes: [
             notes.trim(),
             locations.length ? `Locations: ${locations.join(', ')}` : '',
           ].filter(Boolean).join(' | ') || null,
