@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
 
-  const { pain_level, fatigue_level, stress_level, sleep_hours, soreness_notes, grip_strength_lbs } = body
+  const { pain_level, fatigue_level, stress_level, sleep_hours, grip_strength_lbs } = body
 
   // Verify the caller is authenticated
   const userClient = createClient()
@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
       fatigue_level: fatigue_level ?? null,
       stress_level: stress_level ?? null,
       sleep_hours: sleep_hours ?? null,
-      soreness_notes: soreness_notes ?? null,
       grip_strength_lbs: grip_strength_lbs ?? null,
     },
     { onConflict: 'user_id,checkin_date' },
