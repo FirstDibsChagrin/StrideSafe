@@ -1,8 +1,87 @@
+import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+ 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-body {
-  background-color: #0d0d14;
-  color: #e2e2f0;
+ 
+:root {
+  /* Backgrounds */
+  --bg-base:       #07070f;
+  --bg-card:       #0e0e1c;
+  --bg-card-hover: #111122;
+  --bg-elevated:   #141426;
+ 
+  /* Borders */
+  --border:        #1c1c30;
+  --border-subtle: #141420;
+ 
+  /* Brand */
+  --orange:        #f97316;
+  --orange-dim:    rgba(249, 115, 22, 0.12);
+  --orange-border: rgba(249, 115, 22, 0.25);
+ 
+  /* Semantic */
+  --green:         #22c55e;
+  --green-dim:     rgba(34, 197, 94, 0.10);
+  --green-border:  rgba(34, 197, 94, 0.22);
+ 
+  --red:           #ef4444;
+  --red-dim:       rgba(239, 68, 68, 0.12);
+  --red-border:    rgba(239, 68, 68, 0.22);
+ 
+  --amber:         #f59e0b;
+  --amber-dim:     rgba(245, 158, 11, 0.10);
+ 
+  --violet:        #a78bfa;
+  --violet-dim:    rgba(167, 139, 250, 0.10);
+  --violet-border: rgba(167, 139, 250, 0.22);
+ 
+  /* Text */
+  --text-primary:   #f0eff8;
+  --text-secondary: #8b8ba8;
+  --text-muted:     #4a4a62;
+ 
+  /* Fonts */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
 }
+ 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+ 
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+ 
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+}
+ 
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+ 
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+ 
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+ 
+/* Input reset */
+input, textarea, select {
+  font-family: var(--font-body);
+}
+ 
