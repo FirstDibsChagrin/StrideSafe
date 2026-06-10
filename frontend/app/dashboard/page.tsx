@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
 import AccountMenu from '@/components/AccountMenu'
+import AddRunButton from './AddRunButton'
 import CheckInCard from './CheckInCard'
 import InjuryModal from './InjuryModal'
 import SyncButton from './SyncButton'
@@ -198,6 +199,7 @@ export default async function DashboardPage() {
           </span>
           <div className="flex items-center gap-3">
             <InjuryModal userId={user.id} />
+            <AddRunButton />
             <SyncButton
               userId={user.id}
               hasStravaConnection={hasStravaConnection}
@@ -329,8 +331,11 @@ export default async function DashboardPage() {
                       style={{ background: dotColor, boxShadow: `0 0 6px ${dotColor}` }}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold" style={{ color: '#e2e2f0' }}>
+                      <p className="text-sm font-semibold flex items-center gap-2" style={{ color: '#e2e2f0' }}>
                         {a.workout_type ?? 'Run'} · {a.activity_date?.slice(0, 10) ?? '—'}
+                        {Number(a.strava_activity_id) < 0 && (
+                          <span className="text-xs font-normal rounded-full px-1.5 py-0.5" style={{ background: '#1e1e2e', color: '#6b6b80', border: '1px solid #2a2a3a' }}>manual</span>
+                        )}
                       </p>
                       <p className="text-xs" style={{ color: '#6b6b80' }}>
                         {formatDistance(a.distance_meters)} · {formatPace(a.avg_pace_sec_per_km)}/km

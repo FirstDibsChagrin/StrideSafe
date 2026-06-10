@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import CheckInModal from '@/components/CheckInModal'
 
@@ -38,11 +39,18 @@ export default function CheckInCard() {
             ✅ Post-Run
           </button>
         </div>
-        {lastCheckin && (
-          <p className="text-xs mt-2 text-center" style={{ color: '#6b6b80' }}>
-            Last: {lastCheckin.type}-run check-in saved {lastCheckin.time}
-          </p>
-        )}
+        <div className="flex items-center justify-between mt-3">
+          {lastCheckin ? (
+            <p className="text-xs" style={{ color: '#6b6b80' }}>
+              Last: {lastCheckin.type}-run check-in saved {lastCheckin.time}
+            </p>
+          ) : (
+            <span />
+          )}
+          <Link href="/checkins" className="text-xs font-semibold hover:opacity-70 transition-opacity" style={{ color: '#f97316' }}>
+            View history →
+          </Link>
+        </div>
       </div>
 
       {checkInType && (
