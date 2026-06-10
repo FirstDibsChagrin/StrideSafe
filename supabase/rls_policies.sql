@@ -106,11 +106,15 @@ CREATE POLICY "activities_coach_read_team" ON activities
 -- ─── Step 6: daily_checkins ──────────────────────────────────
 
 DROP POLICY IF EXISTS "checkins_insert_own"       ON daily_checkins;
+DROP POLICY IF EXISTS "checkins_update_own"       ON daily_checkins;
 DROP POLICY IF EXISTS "checkins_select_own"       ON daily_checkins;
 DROP POLICY IF EXISTS "checkins_coach_read_team"  ON daily_checkins;
 
 CREATE POLICY "checkins_insert_own" ON daily_checkins
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "checkins_update_own" ON daily_checkins
+  FOR UPDATE USING (auth.uid() = user_id);
 
 CREATE POLICY "checkins_select_own" ON daily_checkins
   FOR SELECT USING (auth.uid() = user_id);

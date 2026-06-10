@@ -72,31 +72,27 @@ export default function CheckInModal({ type, onClose, onSaved }: Props) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not signed in')
 
-      const today = new Date().toISOString().split('T')[0]
+      const soreness_notes = [
+        notes.trim(),
+        locations.length ? `Locations: ${locations.join(', ')}` : '',
+      ].filter(Boolean).join(' | ') || null
 
-      // Core check-in — always saved, no grip column dependency
-      const { error: upsertError } = await supabase.from('daily_checkins').upsert(
-        {
+      const res = await fetch('/api/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           user_id: user.id,
-          checkin_date: today,
           pain_level: pain,
           fatigue_level: fatigue,
           stress_level: stress,
-          soreness_notes: [
-            notes.trim(),
-            locations.length ? `Locations: ${locations.join(', ')}` : '',
-          ].filter(Boolean).join(' | ') || null,
-        },
-        { onConflict: 'user_id,checkin_date' },
-      )
-      if (upsertError) throw upsertError
+          soreness_notes,
+          grip_strength_lbs: gripNum,
+        }),
+      })
 
-      // Grip strength — saved separately so a missing column never blocks the check-in
-      if (gripNum !== null) {
-        await supabase.from('daily_checkins')
-          .update({ grip_strength_lbs: gripNum })
-          .eq('user_id', user.id)
-          .eq('checkin_date', today)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? 'Failed to save')
       }
 
       onSaved(); onClose()
