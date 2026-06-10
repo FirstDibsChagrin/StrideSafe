@@ -36,7 +36,6 @@ interface Injury {
   body_location: string | null
   start_date: string | null
   severity: number | null
-  estimated_days_out: number | null
   confirmed_by_coach: boolean
   reported_at: string | null
 }
@@ -171,7 +170,7 @@ export default async function DashboardPage() {
     supabase.from('strava_connections').select('id').eq('user_id', user.id).maybeSingle(),
     supabase
       .from('injuries')
-      .select('id,injury_type,body_location,start_date,severity,estimated_days_out,confirmed_by_coach,reported_at')
+      .select('id,injury_type,body_location,start_date,severity,confirmed_by_coach,reported_at')
       .eq('user_id', user.id).order('reported_at', { ascending: false }),
   ])
 
@@ -389,7 +388,6 @@ export default async function DashboardPage() {
                     <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs" style={{ color: '#6b6b80' }}>
                       {injury.start_date && <span>Since {injury.start_date}</span>}
                       {injury.severity != null && <span>Severity {injury.severity}/10</span>}
-                      {injury.estimated_days_out != null && <span>~{injury.estimated_days_out} days out</span>}
                     </div>
                   </div>
                   <span

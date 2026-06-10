@@ -113,7 +113,6 @@ CREATE TABLE public.injuries (
   body_location       TEXT,
   start_date          DATE,
   severity            INTEGER CHECK (severity BETWEEN 1 AND 10),
-  estimated_days_out  INTEGER,
   confirmed_by_coach  BOOLEAN NOT NULL DEFAULT FALSE,
   reported_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );

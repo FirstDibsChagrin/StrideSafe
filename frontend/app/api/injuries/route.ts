@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { injury_type, body_location, start_date, severity, estimated_days_out } = body
+  const { injury_type, body_location, start_date, severity } = body
 
   if (!injury_type) {
     return NextResponse.json({ error: 'injury_type is required' }, { status: 400 })
@@ -30,7 +30,6 @@ export async function POST(req: NextRequest) {
     body_location: body_location ?? null,
     start_date: start_date ?? null,
     severity: severity ?? null,
-    estimated_days_out: estimated_days_out ?? null,
     confirmed_by_coach: false,
     reported_at: new Date().toISOString(),
   })
